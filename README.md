@@ -97,3 +97,7 @@ uv run pytest -m "not slow"     # full functional suite, acceptance scenarios A0
 uv run pytest -m slow -s        # performance envelope: 10k items, 100k history entries
 uv run ruff check .
 ```
+
+## Licence
+
+HomeFabric is released under the [MIT licence](LICENSE).

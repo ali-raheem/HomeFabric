@@ -4,8 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 HomeFabric is a self-hosted home asset and maintenance manager. It implements
 `Product-Specification.md`, which is the source of truth for behaviour; acceptance scenarios
-A01–A16 (§16) map onto tests. Note: `/home/ali/Workspace/CLAUDE.md` (parent directory)
-describes an unrelated Rust project and does not apply here.
+A01–A16 (§16) map onto tests.
 
 ## Commands
 
