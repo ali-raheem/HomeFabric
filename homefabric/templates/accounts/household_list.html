@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Households{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Households</h1><div class="actions"><a class="button" href="{% url 'accounts:household_create' %}">New household</a><a class="button secondary" href="{% url 'operations:instance_status' %}">Administration</a></div></div>
+<p class="muted">Archive a household to hide it from its members and stop its reminders. You can restore it later. Only archived households can be deleted permanently.</p>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">Household</th><th scope="col">Status</th><th scope="col">Members</th><th scope="col">Items</th><th scope="col">Documents</th><th scope="col">Actions</th></tr></thead>
+<tbody>{% for h, s in rows %}<tr>
+<td data-label="Household">{{ h.name }}<br><span class="small muted">created {% localtime_hh h.created_at "%d %b %Y" %}</span></td>
+<td data-label="Status">{% if h.is_archived %}{% status_badge "archived" "Archived" %}<br><span class="small muted">{% localtime_hh h.archived_at "%d %b %Y" %}{% if h.archived_by %} by {{ h.archived_by.label }}{% endif %}{% if h.archive_reason %}: {{ h.archive_reason }}{% endif %}</span>{% else %}{% status_badge "active" "Active" %}{% endif %}</td>
+<td data-label="Members">{{ s.members }}</td><td data-label="Items">{{ s.items }}</td><td data-label="Documents">{{ s.documents }} <span class="small muted">({{ s.file_bytes|filesize }})</span></td>
+<td data-label="Actions"><a class="button small secondary" href="{% url 'accounts:household_export_admin' h.pk %}">Export</a>
+{% if h.is_archived %}<form method="post" action="{% url 'accounts:household_restore' h.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small secondary">Restore</button></form>
+<a class="button small danger" href="{% url 'accounts:household_delete' h.pk %}">Delete…</a>
+{% else %}<a class="button small secondary" href="{% url 'accounts:household_archive' h.pk %}">Archive…</a>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6">No households.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

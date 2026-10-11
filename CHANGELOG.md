@@ -15,6 +15,28 @@ The version lives in `homefabric/__init__.py`.
 releases (they are migrated forward). It rejects backups made by a release with a newer
 database schema. Upgrade first, then restore.
 
+## [1.2.0] - 2026-10-11
+
+### Added
+- **Archiving and permanent deletion of households** for instance administrators, via
+  Administration → Households and `manage.py household list|archive|restore|delete`.
+  - Archiving is reversible. It hides the household from its members, stops schedule
+    generation and reminders (queued reminders are cancelled), and makes its invitations
+    unusable.
+  - Permanent deletion is only allowed for archived households and needs the exact
+    household name. It removes the household's items, relationships, history, tasks,
+    schedules, documents and stored files, memberships and invitations.
+  - User accounts are kept. You can optionally deactivate accounts that belong only to
+    the deleted household.
+  - The deletion runs in one transaction. Files are removed only after it commits, and an
+    audit entry records what was deleted.
+- An administrator can export any household's data from the Households page, including
+  archived ones.
+
+### Upgrade notes
+- Adds migration `accounts.0002_household_archive`. Run `homefabric upgrade`.
+- Backups made by 1.2.0 cannot be restored on earlier releases.
+
 ## [1.1.0] - 2026-10-11
 
 ### Added

@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Archive {{ household.name }}{% endblock %}
+{% block content %}<h1>Archive {{ household.name }}</h1>
+<p>While archived, the household:</p>
+<ul><li>is hidden from all {{ summary.members }} member{{ summary.members|pluralize }}, who will no longer be able to open it;</li>
+<li>generates no new tasks and sends no reminders. Queued reminders are cancelled;</li>
+<li>keeps all {{ summary.items }} item{{ summary.items|pluralize }}, {{ summary.documents }} document{{ summary.documents|pluralize }} ({{ summary.file_bytes|filesize }}) and its history. Instance backups still include it.</li></ul>
+<p>You can restore it at any time from the Households page.</p>
+<form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Archive household</button><a href="{% url 'accounts:household_list' %}">Cancel</a></div></form>
+{% endblock %}

@@ -259,6 +259,20 @@ as patch upgrades, and non-security updates are applied with each release.
   prompted for, or read with `--password-stdin`, and is never passed as an argument.
 - **More households.** Use Administration → New household, or
   `homefabric create_household NAME --owner USER`.
+- **Removing a household.** Use Administration → Households, or the CLI:
+  ```bash
+  homefabric household list
+  homefabric household archive "Old flat" --reason "Sold"
+  homefabric household restore "Old flat"
+  homefabric household delete "Old flat" --confirm-name "Old flat" [--deactivate-sole-members]
+  ```
+  - **Archiving** is reversible. Members lose access, and reminders and schedule generation
+    stop, but all the data is kept.
+  - **Deleting** works only on an archived household, needs its exact name, and cannot be
+    undone. Export the household first; the Households page has an Export button.
+  - User accounts survive deletion, because people may belong to other households.
+  - Instance backups taken before the deletion still contain the household until you
+    rotate them out.
 - **Forgotten password.** With email configured, users can reset their own password. Without
   email:
   - run `homefabric issue_setup_link USERNAME` and give the user the printed single-use link

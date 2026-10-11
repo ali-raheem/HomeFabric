@@ -189,7 +189,7 @@ def plan_reminders(now: dt.datetime | None = None, run_id: str | None = None) ->
     tasks = (
         Task.objects.filter(status__in=UNFINISHED, reminders_enabled=True,
                             due_date__isnull=False, due_date__lte=latest_due,
-                            entity__household__isnull=False)
+                            household__archived_at__isnull=True)
         .filter(Q(schedule__isnull=True) | Q(schedule__enabled=True))
         .select_related("household", "entity", "schedule", "assignee")
         .prefetch_related("reminder_rules__recipients", "schedule__reminder_rules__recipients")
@@ -292,6 +292,8 @@ def _suppression_reason(delivery: NotificationDelivery) -> str | None:
         return None
     if not delivery.endpoint.is_usable:
         return "Channel disabled or awaiting verification"
+    if delivery.household_id and delivery.household.is_archived:
+        return "Household archived"
     if delivery.household_id and delivery.recipient_id not in _member_ids(delivery.household):
         return "Recipient is no longer an active household member"
     if delivery.kind == DeliveryKind.REMINDER:

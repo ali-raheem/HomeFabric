@@ -1,3 +1,4 @@
+from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, update_session_auth_hash
@@ -72,7 +73,7 @@ def switch_household(request):
     household_id = request.POST.get("household")
     allowed = request.user.is_instance_admin or Membership.objects.filter(
         user=request.user, household_id=household_id, is_active=True).exists()
-    if allowed and Household.objects.filter(pk=household_id).exists():
+    if allowed and Household.objects.filter(pk=household_id, archived_at__isnull=True).exists():
         request.session[SESSION_KEY] = str(household_id)
     return redirect("core:dashboard")
 
@@ -286,3 +287,107 @@ def user_setup_link(request, pk):
     audit.record(request.user, "user.setup_link", user, label=user.username)
     messages.info(request, f"Single-use password link for {user.username} (24 hours): {url}")
     return redirect("accounts:user_list")
+
+
+# --- instance administration: household lifecycle -------------------------
+
+class ArchiveHouseholdForm(forms.Form):
+    reason = forms.CharField(max_length=300, required=False, label="Reason (optional)")
+
+
+class DeleteHouseholdForm(forms.Form):
+    confirm_name = forms.CharField(label="Type the household's name to confirm")
+    deactivate_sole_members = forms.BooleanField(
+        required=False, label="Also deactivate accounts that belong only to this household")
+
+
+@instance_admin_required
+def household_list(request):
+    from homefabric.accounts import households
+
+    rows = [(h, households.summary(h)) for h in Household.objects.order_by(
+        "archived_at", "name")]
+    return render(request, "accounts/household_list.html", {"rows": rows})
+
+
+@instance_admin_required
+def household_archive(request, pk):
+    from homefabric.accounts import households
+
+    household = get_object_or_404(Household, pk=pk)
+    form = ArchiveHouseholdForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        households.archive_household(household, actor=request.user,
+                                     reason=form.cleaned_data["reason"])
+        messages.success(request, f"'{household.name}' archived. Members no longer see it and "
+                         "its reminders have stopped. You can restore it at any time.")
+        return redirect("accounts:household_list")
+    return render(request, "accounts/household_archive.html", {
+        "household": household, "form": form, "summary": households.summary(household)})
+
+
+@require_POST
+@instance_admin_required
+def household_restore(request, pk):
+    from homefabric.accounts import households
+
+    household = get_object_or_404(Household, pk=pk)
+    households.restore_household(household, actor=request.user)
+    messages.success(request, f"'{household.name}' restored. Review its schedules: occurrences "
+                     "missed while archived are generated as overdue on the next scheduler run.")
+    return redirect("accounts:household_list")
+
+
+@instance_admin_required
+def household_export_admin(request, pk):
+    import os
+    import tempfile
+
+    from django.conf import settings
+    from django.http import FileResponse
+    from django.utils import timezone
+    from django.utils.text import slugify
+
+    from homefabric.operations.export import write_export
+
+    household = get_object_or_404(Household, pk=pk)
+    tmp = tempfile.NamedTemporaryFile(prefix="export-", suffix=".zip", dir=settings.STAGING_DIR,
+                                      delete=False)
+    tmp.close()
+    write_export(household, tmp.name)
+    audit.record(request.user, "household.export", household, household=household)
+    handle = open(tmp.name, "rb")  # noqa: SIM115 - closed by FileResponse
+    try:
+        os.unlink(tmp.name)
+    except OSError:
+        pass
+    name = f"homefabric-{slugify(household.name) or 'household'}-{timezone.now():%Y%m%d}.zip"
+    return FileResponse(handle, as_attachment=True, filename=name,
+                        content_type="application/zip")
+
+
+@instance_admin_required
+def household_delete(request, pk):
+    from homefabric.accounts import households
+
+    household = get_object_or_404(Household, pk=pk)
+    if not household.is_archived:
+        messages.error(request, "Archive the household before deleting it permanently.")
+        return redirect("accounts:household_list")
+    form = DeleteHouseholdForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            result = households.delete_household(
+                household, actor=request.user, confirm_name=form.cleaned_data["confirm_name"],
+                deactivate_sole_members=form.cleaned_data["deactivate_sole_members"])
+        except DomainError as exc:
+            form.add_error("confirm_name", str(exc))
+        else:
+            extra = (f" Deactivated: {', '.join(result['deactivated_users'])}."
+                     if result["deactivated_users"] else "")
+            messages.success(request, f"'{result['name']}' and all its data were permanently "
+                             f"deleted.{extra}")
+            return redirect("accounts:household_list")
+    return render(request, "accounts/household_delete.html", {
+        "household": household, "form": form, "summary": households.summary(household),
+        "sole_members": households.sole_members(household)})

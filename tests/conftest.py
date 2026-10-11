@@ -122,3 +122,19 @@ def docx(name="notes.docx", macro=False):
 @pytest.fixture
 def today():
     return dt.date.today()
+
+
+@pytest.fixture(autouse=True)
+def _clean_blob_store(settings):
+    """Database rows roll back after each test but stored files do not; start empty."""
+    import os
+    import shutil
+    from pathlib import Path
+
+    root = Path(settings.BLOB_DIR)
+    test_dir = os.environ.get("FABRIC_TEST_DATA_DIR")
+    # Only ever wipe a test data directory.
+    assert "homefabric-test-" in str(root) or (test_dir and str(root).startswith(test_dir))
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True, exist_ok=True)
+    yield

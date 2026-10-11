@@ -10,17 +10,17 @@ def resolve_household(request):
         return None, None
     wanted = request.session.get(SESSION_KEY)
     memberships = Membership.objects.filter(
-        user=user, is_active=True
+        user=user, is_active=True, household__archived_at__isnull=True
     ).select_related("household")
     if user.is_instance_admin:
         if wanted:
-            household = Household.objects.filter(pk=wanted).first()
+            household = Household.objects.filter(pk=wanted, archived_at__isnull=True).first()
             if household:
                 return household, "admin"
         m = memberships.first()
         if m:
             return m.household, "admin"
-        household = Household.objects.first()
+        household = Household.objects.filter(archived_at__isnull=True).first()
         return (household, "admin") if household else (None, None)
     if wanted:
         m = memberships.filter(household_id=wanted).first()

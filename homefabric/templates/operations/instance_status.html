@@ -2,7 +2,7 @@
 {% block content %}
 <div class="page-head"><h1>Administration</h1><div class="actions">
 <a class="button secondary" href="{% url 'accounts:user_list' %}">Users</a>
-<a class="button secondary" href="{% url 'accounts:household_create' %}">New household</a>
+<a class="button secondary" href="{% url 'accounts:household_list' %}">Households</a>
 <a class="button secondary" href="{% url 'operations:integrity' %}">Run integrity check</a>
 <a class="button secondary" href="{% url 'admin:index' %}">Django admin</a></div></div>
 {% if debug %}<div class="alert alert-error"><p><strong>DEBUG mode is on.</strong> Turn it off (unset FABRIC_DEBUG) for real use.</p></div>{% endif %}

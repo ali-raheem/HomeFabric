@@ -52,12 +52,22 @@ class Household(models.Model):
     currency = models.CharField(max_length=3, default="GBP")
     created_at = models.DateTimeField(auto_now_add=True)
     version = models.PositiveIntegerField(default=1)
+    # Archived households are hidden from members and skipped by the scheduler
+    # until restored; only archived households can be permanently deleted.
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archived_by = models.ForeignKey(
+        "User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    archive_reason = models.CharField(max_length=300, blank=True)
 
     class Meta:
         ordering = ["name"]
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_archived(self) -> bool:
+        return self.archived_at is not None
 
 
 class Role(models.TextChoices):
@@ -118,7 +128,8 @@ class Invitation(models.Model):
 
     @property
     def is_usable(self) -> bool:
-        return not self.used_at and not self.revoked_at and self.expires_at > timezone.now()
+        return (not self.used_at and not self.revoked_at and self.expires_at > timezone.now()
+                and not self.household.is_archived)
 
     @property
     def state(self) -> str:

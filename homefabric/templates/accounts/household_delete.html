@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Delete {{ household.name }}{% endblock %}
+{% block content %}<h1>Permanently delete {{ household.name }}</h1>
+<div class="alert alert-error" role="alert"><p><strong>This cannot be undone.</strong> The following will be erased from this instance:</p>
+<ul><li>{{ summary.items }} item{{ summary.items|pluralize }} and their relationships;</li>
+<li>{{ summary.history }} history entr{{ summary.history|pluralize:"y,ies" }}, {{ summary.tasks }} task{{ summary.tasks|pluralize }} and {{ summary.schedules }} schedule{{ summary.schedules|pluralize }};</li>
+<li>{{ summary.documents }} document{{ summary.documents|pluralize }}, including the stored files ({{ summary.file_bytes|filesize }});</li>
+<li>{{ summary.members }} membership{{ summary.members|pluralize }} and all invitations.</li></ul>
+<p>User accounts are kept, because people may belong to other households. Older instance backups still contain this household until they are rotated out.</p></div>
+<p><a class="button secondary" href="{% url 'accounts:household_export_admin' household.pk %}">Download an export first</a> <span class="small muted">(JSON, CSV and all documents)</span></p>
+{% if sole_members %}<p>These accounts belong only to this household: {% for u in sole_members %}{{ u.label }} ({{ u.username }}){% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+<form method="post" class="stack" novalidate>{% csrf_token %}
+{{ form.confirm_name.as_field_group }}
+{% if sole_members %}{{ form.deactivate_sole_members.as_field_group }}{% endif %}
+<div class="form-actions"><button type="submit" class="danger">Delete permanently</button><a href="{% url 'accounts:household_list' %}">Cancel</a></div></form>
+{% endblock %}

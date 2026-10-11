@@ -589,7 +589,8 @@ def run_all_schedules(now=None) -> dict:
     created = 0
     schedules = 0
     errors = []
-    for schedule in MaintenanceSchedule.objects.filter(enabled=True).select_related("household"):
+    for schedule in MaintenanceSchedule.objects.filter(
+            enabled=True, household__archived_at__isnull=True).select_related("household"):
         schedules += 1
         try:
             created += len(generate_for_schedule(schedule))
