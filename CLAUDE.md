@@ -97,6 +97,17 @@ A modular Django monolith in `homefabric/`. Apps: `accounts`, `assets`, `documen
 
 ## Conventions
 
+- **Versioning (semantic).** Every user-visible change bumps `homefabric/__init__.py`
+  `__version__`, the only place the version is written. Add a matching top entry to
+  `CHANGELOG.md` in the same commit; `tests/test_version.py` enforces this.
+  - PATCH: bug fixes.
+  - MINOR: backwards-compatible features, including new migrations.
+  - MAJOR: incompatible changes, such as backup or export formats older releases can't read,
+    or removed commands or settings.
+
+  Several changes made before a release share one bump. Note new migrations under
+  "Upgrade notes".
+
 - New management commands subclass `core.cli.FabricCommand` (adds `--json`; `fail()` exits
   nonzero). Never accept secrets as command-line arguments.
 - Money is stored as integer minor units plus a currency (`core/money.py`); never use

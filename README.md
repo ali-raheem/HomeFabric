@@ -87,6 +87,7 @@ in [`deploy/`](deploy/).
 | [docs/backup-format.md](docs/backup-format.md) | Backup and export archive formats |
 | [docs/decisions.md](docs/decisions.md) | Recorded technical decisions (spec §18) |
 | [docs/accessibility.md](docs/accessibility.md) | Accessibility approach and manual test checklist |
+| [CHANGELOG.md](CHANGELOG.md) | Release history (semantic versioning) |
 | [Product-Specification.md](Product-Specification.md) | The product specification |
 
 ## Tests

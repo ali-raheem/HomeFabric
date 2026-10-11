@@ -219,7 +219,6 @@ wheels = [
 
 [[package]]
 name = "homefabric"
-version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "apprise" },

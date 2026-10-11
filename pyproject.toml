@@ -1,6 +1,6 @@
 [project]
 name = "homefabric"
-version = "1.0.0"
+dynamic = ["version"]
 description = "Self-hosted home asset and maintenance manager"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -26,6 +26,9 @@ dev = [
 [build-system]
 requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "homefabric.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["homefabric*"]

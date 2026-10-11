@@ -2,13 +2,13 @@
 services:
   web:
     build: .
-    image: homefabric:1.0.0
+    image: homefabric:local
     restart: unless-stopped
     ports: ["127.0.0.1:8000:8000"]
     volumes: ["homefabric-data:/data"]
     env_file: [.env]          # FABRIC_PUBLIC_BASE_URL, FABRIC_ALLOWED_HOSTS, FABRIC_EMAIL_* ...
   scheduler:
-    image: homefabric:1.0.0
+    image: homefabric:local
     restart: unless-stopped
     depends_on: [web]
     volumes: ["homefabric-data:/data"]

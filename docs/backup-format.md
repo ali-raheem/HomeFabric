@@ -24,7 +24,7 @@ The archive contains no other entries. Restore rejects:
 {
   "format": "homefabric-backup",
   "format_version": 1,
-  "app_version": "1.0.0",
+  "app_version": "1.1.0",
   "created_at": "2026-10-11T02:30:00+00:00",
   "source": {"platform": "...", "python": "3.12.3", "django": "5.2.x"},
   "schema": {"assets": ["0001_initial", "0002_seed_entity_types"], "...": []},
