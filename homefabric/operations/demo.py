@@ -24,8 +24,8 @@ def build(household, user) -> dict:
                                     data={"name": name, "entity_type": _type(kind), **data})
 
     house = make("12 Example Road", "property", description="Three-bedroom semi-detached house.")
-    ground = make("Ground floor", "floor", location=house)
-    first = make("First floor", "floor", location=house)
+    ground = make("Ground floor", "floor", location=house, sort_order=1)
+    first = make("First floor", "floor", location=house, sort_order=2)
     utility = make("Utility room", "room", location=ground)
     bedroom = make("Bedroom 1", "room", location=first)
     heating = make("Central heating", "system", description="Gas combi boiler, 9 radiators.")

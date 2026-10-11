@@ -84,6 +84,7 @@ def build_export(household) -> dict:
                 "id": str(e.pk), "name": e.name, "type": e.entity_type.name,
                 "base_kind": e.entity_type.base_kind, "description": e.description,
                 "status": e.status, "tags": sorted(t.name for t in e.tags.all()),
+                "sort_order": e.sort_order,
                 "manufacturer": e.manufacturer, "model_number": e.model_number,
                 "serial_number": e.serial_number, "purchase_date": _s(e.purchase_date),
                 "installation_date": _s(e.installation_date),

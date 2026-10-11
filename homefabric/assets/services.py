@@ -11,6 +11,7 @@ from homefabric.assets.models import (
     ASSET_KINDS,
     COVER_KINDS,
     LOCATION_KINDS,
+    SIBLING_ORDER,
     BaseKind,
     Entity,
     EntityRelationship,
@@ -28,6 +29,7 @@ EDITABLE_FIELDS = [
     "name", "description", "entity_type", "manufacturer", "model_number", "serial_number",
     "purchase_date", "installation_date", "warranty_end", "cost_minor", "cost_currency",
     "provider", "reference_number", "start_date", "end_date", "renewal_date", "attributes",
+    "sort_order",
 ]
 
 # --- attributes -----------------------------------------------------------
@@ -383,7 +385,7 @@ def contents(location: Entity, include_archived: bool = False):
     ).select_related("entity_type")
     if not include_archived:
         qs = qs.filter(status=EntityStatus.ACTIVE)
-    return qs.order_by("entity_type__base_kind", "name")
+    return qs.order_by(*SIBLING_ORDER)
 
 
 def components(entity: Entity, include_archived: bool = False):
@@ -392,7 +394,7 @@ def components(entity: Entity, include_archived: bool = False):
     ).select_related("entity_type")
     if not include_archived:
         qs = qs.filter(status=EntityStatus.ACTIVE)
-    return qs.order_by("name")
+    return qs.order_by(*SIBLING_ORDER)
 
 
 def relationships_for(entity: Entity) -> dict:
@@ -416,7 +418,7 @@ def top_level_locations(household: Household, include_archived=False):
     ).filter(entity_type__base_kind__in=list(LOCATION_KINDS)).select_related("entity_type")
     if not include_archived:
         qs = qs.filter(status=EntityStatus.ACTIVE)
-    return qs.order_by("entity_type__base_kind", "name")
+    return qs.order_by(*SIBLING_ORDER)
 
 
 def unplaced_entities(household: Household):
@@ -432,7 +434,7 @@ def top_level_systems(household: Household, include_archived=False):
     ).exclude(outgoing__kind=RelationKind.PART_OF).select_related("entity_type")
     if not include_archived:
         qs = qs.filter(status=EntityStatus.ACTIVE)
-    return qs.order_by("name")
+    return qs.order_by(*SIBLING_ORDER)
 
 
 def child_count_map(entity_ids, kind: str) -> dict:

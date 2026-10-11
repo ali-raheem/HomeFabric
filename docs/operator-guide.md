@@ -272,7 +272,22 @@ as patch upgrades, and non-security updates are applied with each release.
 - **Trusted administration.** Django's admin site is at `/django-admin/` for instance
   administrators only. History entries cannot be edited there.
 
-## 11. Security notes
+## 11. House manual
+
+Members can generate a printable manual from the web interface; see the user guide. Owners
+can also download a ZIP of the manual together with its documents. From the command line:
+
+```bash
+homefabric house_manual "Our home" --output manual.html               # single offline file
+homefabric house_manual "Our home" --output manual.zip --history all  # manual plus documents
+```
+
+The manual is generated on demand. A typical house of a few hundred items takes a second or
+two. At the 10,000-item limit it takes about 30 seconds and produces around 16 MB of HTML,
+so keep your reverse proxy's read timeout at 60 seconds or more (the provided nginx example
+uses 300).
+
+## 12. Security notes
 
 - No public registration. Invitations are single-use, expire after 7 days, and only their
   hash is stored.

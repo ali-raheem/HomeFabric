@@ -42,6 +42,10 @@ It is never duplicated.
   - viewer, editor and owner roles, plus a separate instance administrator;
   - session invalidation, login throttling, and a rule that a household always keeps an
     owner.
+- **House manual**: a printable handbook for someone who doesn't use HomeFabric. It has
+  numbered contents by room and system, a colour-coded map of the home, and a page per item
+  covering details, photos, documents, maintenance and history. View it and print to PDF,
+  download it as one offline HTML file, or download a ZIP that includes the documents.
 - **Operations**:
   - consistent full-instance backups, verification, and a restore that can be rolled back
     (CLI only);

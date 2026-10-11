@@ -4,6 +4,7 @@
   <div class="actions"><a class="button secondary" href="{% url 'accounts:members' %}">Members</a>
   {% if perm.manage %}<a class="button secondary" href="{% url 'operations:household_audit' %}">Audit log</a>{% endif %}
   {% if perm.export %}<a class="button secondary" href="{% url 'operations:household_export' %}">Export data</a>{% endif %}
+  <a class="button secondary" href="{% url 'manual:options' %}">House manual</a>
   <a class="button secondary" href="{% url 'assets:type_list' %}">Item types</a>
   <a class="button secondary" href="{% url 'notifications:channels' %}">My notifications</a></div></div>
 <section class="card" aria-labelledby="set-h"><h2 id="set-h">Settings</h2>

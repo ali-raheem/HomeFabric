@@ -15,6 +15,10 @@ class EntityForm(forms.Form):
     description = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False,
                                   help_text="Markdown is supported.")
     tags = forms.CharField(required=False, help_text="Comma-separated, e.g. heating, annual.")
+    sort_order = forms.IntegerField(
+        required=False, min_value=0, max_value=100000, label="Sort position",
+        help_text="Optional. Orders this item among others in the same place, lowest first "
+                  "(e.g. Ground floor 1, First floor 2). Items without a position follow.")
     manufacturer = forms.CharField(max_length=150, required=False)
     model_number = forms.CharField(max_length=150, required=False, label="Model")
     serial_number = forms.CharField(max_length=150, required=False, label="Serial number")
@@ -76,6 +80,7 @@ class EntityForm(forms.Form):
             "provider": d.get("provider", ""), "reference_number": d.get("reference_number", ""),
             "start_date": d.get("start_date"), "end_date": d.get("end_date"),
             "renewal_date": d.get("renewal_date"), "attributes": d.get("attributes") or {},
+            "sort_order": d.get("sort_order"),
         }
 
     @classmethod
@@ -83,7 +88,7 @@ class EntityForm(forms.Form):
         initial = {f: getattr(entity, f) for f in (
             "name", "entity_type", "description", "manufacturer", "model_number",
             "serial_number", "purchase_date", "installation_date", "warranty_end", "provider",
-            "reference_number", "start_date", "end_date", "renewal_date")}
+            "reference_number", "start_date", "end_date", "renewal_date", "sort_order")}
         initial["tags"] = ", ".join(t.name for t in entity.tags.all())
         initial["attributes"] = services.format_attribute_lines(entity.attributes)
         initial["version"] = entity.version

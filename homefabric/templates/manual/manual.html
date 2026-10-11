@@ -1,0 +1,117 @@
+{% load static fabric manual %}<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House manual · {{ m.household.name }}</title>
+{% if inline_css %}<style>{{ inline_css|safe }}</style>{% else %}<link rel="stylesheet" href="{% static 'css/manual.css' %}">{% endif %}
+{% if m.options.link_mode == "app" %}<script src="{% static 'js/manual.js' %}" defer></script>{% endif %}
+</head>
+<body class="{% if m.options.page_per_item %}page-per-item{% endif %}">
+<div class="toolbar no-print" role="region" aria-label="Manual actions">
+  {% if m.options.link_mode == "app" %}
+  <a href="{% url 'manual:options' %}">← Back to manual options</a>
+  <button type="button" data-print>Print or save as PDF</button>
+  {% else %}
+  <p>To make a PDF, use your browser's <strong>Print</strong> command and choose “Save as PDF”. Turn on “Background graphics” to keep the chart colours.</p>
+  {% endif %}
+</div>
+
+<main>
+<header class="cover">
+  <p class="eyebrow">House manual</p>
+  <h1>{{ m.household.name }}</h1>
+  <p class="cover-meta">Prepared {{ m.generated_at|date:"j F Y" }}{% if m.generated_by %} by {{ m.generated_by }}{% endif %} · {{ m.counts.items }} item{{ m.counts.items|pluralize }}</p>
+  <p class="cover-note">This manual describes the home's rooms, systems, equipment, documents and maintenance as recorded in HomeFabric. It is a snapshot: check dates against the “Prepared” date above.</p>
+  {% if m.options.link_mode == "zip" %}<p class="cover-note">Documents referred to in this manual are in the <code>documents</code> folder next to this file.</p>{% endif %}
+</header>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">Contents</h2>
+  <ol class="toc-fixed">
+    <li><a href="#glance">At a glance</a></li>
+    {% if m.charts %}<li><a href="#chart">Map of the home</a></li>{% endif %}
+  </ol>
+  {% for part in m.parts %}
+  <h3 class="toc-part">{{ part.label }}</h3>
+  <ul class="toc-list">
+    {% for c in part.contents %}
+    <li class="d{{ c.depth }}">{% if c.kind %}<span class="swatch k-{{ c.kind }}" aria-hidden="true"></span>{% endif %}<a href="#{{ c.anchor }}"><span class="num">{{ c.number }}</span> {{ c.title }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</nav>
+
+<section id="glance" class="chapter">
+  <h2>At a glance</h2>
+  <h3>Maintenance due in the next 90 days</h3>
+  {% if m.upcoming %}<table><thead><tr><th scope="col">Due</th><th scope="col">Task</th><th scope="col">Item</th><th scope="col">Assigned to</th></tr></thead><tbody>
+  {% for t in m.upcoming %}<tr><td>{{ t.due|date:"d M Y" }}{% if t.overdue %} <strong class="overdue">OVERDUE</strong>{% endif %}</td><td>{{ t.title }}</td><td>{% ref t.item %}</td><td>{{ t.assignee.label|default:"—" }}</td></tr>{% endfor %}
+  </tbody></table>{% else %}<p>Nothing due.</p>{% endif %}
+  <h3>Recurring maintenance</h3>
+  {% if m.schedules %}<table><thead><tr><th scope="col">What</th><th scope="col">Item</th><th scope="col">How often</th><th scope="col">Next due</th></tr></thead><tbody>
+  {% for s in m.schedules %}<tr><td>{{ s.title }}</td><td>{% ref s.item %}</td><td>{{ s.describe }}</td><td>{{ s.next_due|date:"d M Y"|default:"—" }}</td></tr>{% endfor %}
+  </tbody></table>{% else %}<p>No recurring maintenance recorded.</p>{% endif %}
+  {% if m.policies %}<h3>Policies and agreements</h3>
+  <div class="table-scroll"><table><thead><tr><th scope="col">Policy / agreement</th><th scope="col">Provider</th><th scope="col">Reference</th><th scope="col">Ends</th><th scope="col">Renew / review</th><th scope="col">Covers</th></tr></thead><tbody>
+  {% for p in m.policies %}<tr><td>{% ref p.item %}</td><td>{{ p.provider|default:"—" }}</td><td>{{ p.reference|default:"—" }}</td><td>{{ p.end|date:"d M Y"|default:"—" }}</td><td>{{ p.renewal|date:"d M Y"|default:"—" }}</td><td>{% for c in p.covers %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+</section>
+
+{% if m.charts %}<section id="chart" class="chapter">
+  <h2>Map of the home</h2>
+  <ul class="legend" aria-label="Colour key">{% for label, fill, stroke in m.legend %}<li><svg width="18" height="14" aria-hidden="true"><rect x="1" y="1" width="16" height="12" rx="3" fill="{{ fill }}" stroke="{{ stroke }}"/></svg> {{ label }}</li>{% endfor %}</ul>
+  {% for chart in m.charts %}
+  <h3>{{ chart.title }}</h3>{% if chart.note %}<p class="muted">{{ chart.note }}</p>{% endif %}
+  {% for b in chart.blocks %}
+  <svg class="chart" viewBox="0 0 {{ b.width }} {{ b.height }}" width="{{ b.width }}" height="{{ b.height }}" role="img" aria-label="{{ chart.title }}{% if chart.blocks|length > 1 %}, part {{ forloop.counter }}{% endif %}">
+    {% for x1, y1, x2, y2 in b.lines %}<line x1="{{ x1 }}" y1="{{ y1 }}" x2="{{ x2 }}" y2="{{ y2 }}" stroke="#6b7280" stroke-width="1.2"/>{% endfor %}
+    {% for n in b.rows %}<a href="#{{ n.anchor }}"><rect x="{{ n.x }}" y="{{ n.y }}" width="{{ n.w }}" height="{{ n.h }}" rx="5" fill="{{ n.fill }}" stroke="{{ n.stroke }}" stroke-width="1.2"/><text x="{{ n.tx }}" y="{{ n.ty }}" font-size="12" fill="#111827" font-family="system-ui, sans-serif">{% if n.number %}{{ n.number }} {% endif %}{{ n.label }}</text><text x="{{ n.kx }}" y="{{ n.ty }}" font-size="10" fill="#374151" text-anchor="end" font-family="system-ui, sans-serif">{{ n.kind }}</text></a>{% endfor %}
+  </svg>
+  {% endfor %}{% endfor %}
+</section>{% endif %}
+
+{% for part in m.parts %}
+{% if part.divider %}<div class="part" id="part-{{ part.key }}"><p class="part-title">{{ part.label }}</p></div>{% endif %}
+{% for p in part.pages %}
+<article id="{{ p.anchor }}" class="{% if p.is_chapter %}chapter{% else %}item-page{% endif %} depth-{{ p.depth }}">
+  <header class="page-head">
+    {% if p.kind %}<span class="kind-badge k-{{ p.kind }}">{{ p.entity.entity_type.name }}</span>{% endif %}
+    <h2 class="{% if p.depth > 1 %}h-sub{% endif %}"><span class="num">{{ p.number }}</span> {{ p.title }}</h2>
+    {% if p.path %}<p class="where">Location: {% for r in p.path %}{% ref r %}{% if not forloop.last %} › {% endif %}{% endfor %}</p>{% endif %}
+    {% if p.part_of %}<p class="where">Part of: {% for r in p.part_of %}{% ref r %}{% if not forloop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+    {% if p.tags %}<p class="tags">{% for t in p.tags %}<span class="tag">{{ t }}</span>{% endfor %}</p>{% endif %}
+  </header>
+  {% if p.intro %}<p>{{ p.intro }}</p>{% endif %}
+  {% if p.description %}<div class="description">{{ p.description }}</div>{% endif %}
+  {% if p.photos %}<div class="photos">{% for ph in p.photos %}<figure><img src="{{ ph.src }}" alt="{{ ph.caption }}"><figcaption>{{ ph.caption }}</figcaption></figure>{% endfor %}</div>{% endif %}
+  {% if p.details %}<table class="details"><tbody>{% for label, value in p.details %}<tr><th scope="row">{{ label }}</th><td>{{ value }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+
+  {% if p.contents %}<h3>{% if p.kind in "property floor room" %}In this {{ p.entity.entity_type.name|lower }}{% else %}Contains{% endif %}</h3><ul class="refs">{% for r in p.contents %}<li><span class="swatch k-{{ r.kind }}" aria-hidden="true"></span>{% ref r %}</li>{% endfor %}</ul>{% endif %}
+  {% if p.components %}<h3>{% if p.kind == "system" %}Parts of this system{% else %}Components{% endif %}</h3><ul class="refs">{% for r in p.components %}<li><span class="swatch k-{{ r.kind }}" aria-hidden="true"></span>{% ref r %}</li>{% endfor %}</ul>{% endif %}
+  {% if p.associated %}<h3>Associated with</h3><ul class="refs">{% for r in p.associated %}<li>{% ref r %}</li>{% endfor %}</ul>{% endif %}
+  {% if p.covers %}<h3>Covers</h3><ul class="refs">{% for r in p.covers %}<li>{% ref r %}</li>{% endfor %}</ul>{% endif %}
+  {% if p.covered_by %}<h3>Covered by</h3><ul class="refs">{% for r in p.covered_by %}<li>{% ref r %}</li>{% endfor %}</ul>{% endif %}
+
+  {% if p.schedules or p.tasks %}<h3>Maintenance</h3>
+  {% if p.schedules %}<table><thead><tr><th scope="col">Recurring task</th><th scope="col">How often</th><th scope="col">Next due</th></tr></thead><tbody>
+  {% for s in p.schedules %}<tr><td>{{ s.title }}</td><td>{{ s.describe }}{% if not s.enabled %} (paused){% endif %}</td><td>{{ s.next_due|date:"d M Y"|default:"—" }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+  {% if p.tasks %}<table><thead><tr><th scope="col">Open task</th><th scope="col">Due</th><th scope="col">Assigned to</th></tr></thead><tbody>
+  {% for t in p.tasks %}<tr><td>{{ t.title }}{% if t.booking %} (booking){% endif %}</td><td>{{ t.due|date:"d M Y"|default:"—" }}{% if t.overdue %} <strong class="overdue">OVERDUE</strong>{% endif %}</td><td>{{ t.assignee.label|default:"—" }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+  {% endif %}
+
+  {% if p.documents %}<h3>Documents</h3><table><thead><tr><th scope="col">Document</th><th scope="col">Type</th><th scope="col">File</th></tr></thead><tbody>
+  {% for d in p.documents %}<tr><td>{% if d.href %}<a href="{{ d.href }}">{{ d.name }}</a>{% else %}{{ d.name }}{% endif %}{% if d.description %}<br><span class="muted">{{ d.description|truncatechars:160 }}</span>{% endif %}</td><td>{{ d.category }}</td><td>{{ d.filename }} <span class="muted">({{ d.size|filesize }}{% if d.revision > 1 %}, revision {{ d.revision }}{% endif %})</span></td></tr>{% endfor %}</tbody></table>{% endif %}
+
+  {% if p.history %}<h3>History{% if p.history_truncated %} (most recent){% endif %}</h3>
+  <ol class="history">{% for h in p.history %}<li><p><strong>{{ h.date|date:"d M Y" }}</strong> · {{ h.type }}{% if h.title != h.type %}: {{ h.title }}{% endif %}{% if h.provider %} · {{ h.provider }}{% endif %}{% if h.cost %} · {{ h.cost }}{% endif %}{% if h.corrected %} <span class="muted">(corrected)</span>{% endif %}</p>
+  {% if h.notes %}<div class="notes">{{ h.notes }}</div>{% endif %}
+  {% if h.attachments %}<p class="muted">Attached: {% for a in h.attachments %}{% if a.href %}<a href="{{ a.href }}">{{ a.name }}</a>{% else %}{{ a.name }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}</li>{% endfor %}</ol>{% endif %}
+</article>
+{% endfor %}
+{% endfor %}
+
+</main>
+<footer class="manual-footer"><p>Generated by HomeFabric from records for {{ m.household.name }} on {{ m.generated_at|date:"j F Y" }}.</p></footer>
+</body>
+</html>

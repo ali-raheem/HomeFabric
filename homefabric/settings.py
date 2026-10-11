@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "homefabric.maintenance",
     "homefabric.notifications",
     "homefabric.operations",
+    "homefabric.manual",
 ]
 
 MIDDLEWARE = [

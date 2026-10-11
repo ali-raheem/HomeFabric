@@ -29,7 +29,7 @@ tests run the real CLI in subprocesses against separate data directories.
 ## Architecture
 
 A modular Django monolith in `homefabric/`. Apps: `accounts`, `assets`, `documents`,
-`maintenance`, `notifications`, `operations`, plus `core` for shared helpers.
+`maintenance`, `notifications`, `operations`, `manual`, plus `core` for shared helpers.
 
 - **Business rules live in each app's `services.py`.** Views and management commands are
   thin and call services. Services raise `core.errors.DomainError` (the message is safe to
@@ -75,6 +75,16 @@ A modular Django monolith in `homefabric/`. Apps: `accounts`, `assets`, `documen
   - `operations/maintenance_lock.py` is a lock file that blocks web writes (middleware) and
     scheduler jobs.
   - `operations/jobs.py` holds DB lease locks and heartbeats for the scheduler commands.
+- **House manual** (`homefabric/manual/`):
+  - `builder.py` lays the household out as numbered chapters: locations, then systems,
+    policies, and other items. Each entity gets exactly one page; everywhere else it is a
+    numbered `Ref` cross-reference.
+  - The builder also produces the colour-coded SVG chart data.
+  - `render.py` outputs the in-app view (stylesheet linked, so it stays CSP-safe), a single
+    offline HTML file (CSS inlined, photos as data URIs), or a ZIP with relative links to
+    bundled documents.
+  - The print layout lives in `static/css/manual.css`. It is inlined into downloads, so it
+    must not reference other files.
 - **Data layout.** Under `DATA_DIR`: `instance/db.sqlite3`, `instance/blobs/` (opaque
   content-addressed files, per household), `staging/`, `secret_key`, `maintenance.lock`.
   Configuration is read in `homefabric/config.py` from `FABRIC_*` environment variables or

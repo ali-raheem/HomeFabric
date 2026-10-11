@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}House manual{% endblock %}
+{% block content %}
+<h1>House manual</h1>
+<p>A complete, printable manual of {{ current_household.name }}. It has a contents list organised by room and system, a colour-coded map of the home, and a chapter for each room, system and policy, with a page for every item covering its details, documents, maintenance and history.</p>
+<p class="muted">It is written for someone who doesn't use HomeFabric, such as a buyer, tenant, house-sitter or tradesperson. It is not a backup.</p>
+<form method="get" class="stack">
+  {{ form }}
+  <div class="form-actions">
+    <button type="submit" formaction="{% url 'manual:view' %}">View and print</button>
+    <button type="submit" class="secondary" formaction="{% url 'manual:download' %}" name="format" value="html">Download as a single HTML file</button>
+    {% if perm.export %}<button type="submit" class="secondary" formaction="{% url 'manual:download' %}" name="format" value="zip">Download with documents (ZIP)</button>{% endif %}
+  </div>
+</form>
+<section class="card" aria-labelledby="pdf-h"><h2 id="pdf-h">Making a PDF</h2>
+<ol><li>Choose <strong>View and print</strong>, then <strong>Print or save as PDF</strong>. You can also open a downloaded file in any browser and use Print.</li>
+<li>Select “Save as PDF” as the printer and turn on <strong>Background graphics</strong> so the colours print.</li></ol>
+<p class="muted small">The single HTML file works offline and includes small photos, but not the document files. The ZIP{% if not perm.export %}, which only household owners can download,{% endif %} contains the manual and every document it mentions, linked so that they open from the manual.</p></section>
+{% endblock %}

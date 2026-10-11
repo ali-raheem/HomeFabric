@@ -80,6 +80,9 @@ class Entity(HouseholdOwned, TimeStampedModel, Versioned):
         max_length=10, choices=EntityStatus.choices, default=EntityStatus.ACTIVE, db_index=True
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="entities")
+    # Optional position among siblings (e.g. Ground floor 1, First floor 2).
+    # Unset items follow, ordered by kind then name.
+    sort_order = models.PositiveIntegerField(null=True, blank=True)
 
     # Equipment details (query-critical, typed columns)
     manufacturer = models.CharField(max_length=150, blank=True)
@@ -133,6 +136,9 @@ class Entity(HouseholdOwned, TimeStampedModel, Versioned):
         from django.urls import reverse
 
         return reverse("assets:entity_detail", args=[self.pk])
+
+
+SIBLING_ORDER = [models.F("sort_order").asc(nulls_last=True), "entity_type__base_kind", "name"]
 
 
 class RelationKind(models.TextChoices):

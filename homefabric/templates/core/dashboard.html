@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% load fabric %}{% block title %}Dashboard{% endblock %}
 {% block content %}
 <div class="page-head"><h1>Dashboard</h1>
-{% if perm.edit %}<div class="actions"><a class="button" href="{% url 'assets:entity_create' %}">Add item</a><a class="button secondary" href="{% url 'maintenance:task_create' %}">Add task</a></div>{% endif %}</div>
+{% if perm.edit %}<div class="actions"><a class="button" href="{% url 'assets:entity_create' %}">Add item</a><a class="button secondary" href="{% url 'maintenance:task_create' %}">Add task</a><a class="button secondary" href="{% url 'manual:options' %}">House manual</a></div>{% endif %}</div>
 
 {% if scheduler.stale %}<div class="alert alert-warning" role="alert"><p><strong>Scheduled processing is not running.</strong>
 {% if scheduler.last_run %}Last successful run {% localtime_hh scheduler.last_run %}.{% else %}It has never run.{% endif %}

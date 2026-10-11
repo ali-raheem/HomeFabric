@@ -12,6 +12,7 @@ urlpatterns = [
     path("", include("homefabric.maintenance.urls")),
     path("", include("homefabric.notifications.urls")),
     path("", include("homefabric.operations.urls")),
+    path("", include("homefabric.manual.urls")),
     path("django-admin/", admin.site.urls),
 ]
 

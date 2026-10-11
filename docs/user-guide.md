@@ -33,6 +33,10 @@ Access is household-wide: there are no private items or documents inside a house
   - policies and agreements: provider, reference, start, expiry, and renewal or review date.
   Anything else goes in **Other details** as `name: value` lines.
 - **Location.** Every item has one immediate location. Use **Move** to change it.
+- **Sort position** (optional) sets the order among items in the same place. For example,
+  give Ground floor 1 and First floor 2. The order is used in Explore, on item pages and in
+  the house manual. Items without a position come after, grouped by kind and then sorted
+  alphabetically.
 - **Relationships** (on the item page):
   - *Part of*: the radiator is part of the central heating. An item can be part of several
     systems.
@@ -120,6 +124,40 @@ occurrences** on the schedule page.
 
 The search box looks through item names, descriptions, tags, model and serial numbers,
 history notes, document names and tasks. It does not search inside document contents.
+
+## House manual
+
+**Dashboard → House manual** (or **Household → House manual**) produces a complete printed
+manual for someone who doesn't use HomeFabric, such as a buyer, tenant, house-sitter or
+tradesperson. The manual contains:
+
+- **Contents**: organised by property, floor and room, then systems, policies and
+  agreements, and finally anything not yet placed. Every entry is numbered (for example
+  1.2.1.1).
+- **At a glance**: maintenance due in the next 90 days, all recurring maintenance, and every
+  policy with its renewal date.
+- **Map of the home**: colour-coded charts of where things are and how systems fit
+  together. Each box also names its kind, so the chart still works printed in black and
+  white.
+- **A chapter for each room**, with a page for each item in it. An item page shows its
+  location, every system it belongs to, its details, photos, documents, recurring and open
+  tasks, related items and recent history.
+- **Cross-references.** Each item is printed once. Wherever else it is mentioned, it appears
+  with its number: a boiler in the kitchen that is part of both Central Heating and Hot
+  Water is printed in the Kitchen chapter, and both system chapters point to it.
+
+To get the manual:
+
+- **View and print**: opens the manual. Press **Print or save as PDF**, and turn on
+  "Background graphics" so the colours print.
+- **Download as a single HTML file**: one file that works offline in any browser, with
+  small photos built in. Open it and print it to make a PDF.
+- **Download with documents (ZIP)**: owners only. Contains the manual plus every document it
+  mentions, such as manuals, certificates and invoices, linked so they open straight from the
+  manual.
+
+Options let you choose how much history to include, whether to show photos, and whether
+each item starts on a new printed page. The manual is a snapshot, not a backup.
 
 ## Owners: members and data
 

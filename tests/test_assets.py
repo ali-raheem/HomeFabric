@@ -239,3 +239,28 @@ def test_concurrent_opposite_part_of_edges_cannot_both_succeed(household, make_e
 def test_seed_types_exist(db):
     assert {seed_type(k).base_kind for k in ("property", "floor", "room", "system", "equipment",
                                               "component", "policy", "agreement")}
+
+
+def test_sort_order_controls_sibling_order(household, owner, make_entity, client):
+    house = make_entity(household, "House", "property")
+    attic = make_entity(household, "Attic", "floor", location=house)
+    first = make_entity(household, "First floor", "floor", location=house, sort_order=2)
+    ground = make_entity(household, "Ground floor", "floor", location=house, sort_order=1)
+    garden = make_entity(household, "Garden", "room", location=house)
+    # Positioned items first by position; the rest by kind, then name.
+    assert list(services.contents(house)) == [ground, first, attic, garden]
+    login(client, owner)
+    html = client.get(reverse("assets:explorer_children", args=[house.pk])).content.decode()
+    assert html.index("Ground floor") < html.index("First floor") < html.index("Attic")
+
+
+def test_sort_order_editable_via_form(household, owner, make_entity, client):
+    house = make_entity(household, "House", "property")
+    floor = make_entity(household, "Loft", "floor", location=house)
+    login(client, owner)
+    r = client.post(reverse("assets:entity_edit", args=[floor.pk]), {
+        "name": "Loft", "entity_type": floor.entity_type_id, "location": house.pk,
+        "sort_order": "3", "cost_currency": "GBP", "version": floor.version})
+    assert r.status_code == 302
+    floor.refresh_from_db()
+    assert floor.sort_order == 3

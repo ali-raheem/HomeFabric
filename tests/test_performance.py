@@ -71,8 +71,14 @@ def test_envelope_response_times(household, owner):
                 samples.append(time.perf_counter() - start)
                 assert r.status_code == 200, url
         results[name] = p95(samples)
-    print("p95 seconds:", results)
+    start = time.perf_counter()
+    r = client.get("/household/manual/view/?history=recent&photos=on&page_per_item=on")
+    manual_seconds = time.perf_counter() - start
+    assert r.status_code == 200 and len(r.content) > 1_000_000
+    print("p95 seconds:", results, "full house manual:", round(manual_seconds, 1), "s",
+          len(r.content) // 1024, "KB")
     assert results["dashboard"] < 1.0
     assert results["entity"] < 1.0
     assert results["lists"] < 1.0
     assert results["search"] < 2.0
+    assert manual_seconds < 60  # a whole-house document, generated on demand
