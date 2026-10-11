@@ -1,0 +1,18 @@
+# docker compose up -d   (then: docker compose exec web homefabric bootstrap_admin --username you --household Home)
+services:
+  web:
+    build: .
+    image: homefabric:1.0.0
+    restart: unless-stopped
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: ["homefabric-data:/data"]
+    env_file: [.env]          # FABRIC_PUBLIC_BASE_URL, FABRIC_ALLOWED_HOSTS, FABRIC_EMAIL_* ...
+  scheduler:
+    image: homefabric:1.0.0
+    restart: unless-stopped
+    depends_on: [web]
+    volumes: ["homefabric-data:/data"]
+    env_file: [.env]
+    command: ["homefabric", "run_scheduler", "--interval", "60"]
+volumes:
+  homefabric-data:

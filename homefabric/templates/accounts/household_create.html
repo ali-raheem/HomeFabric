@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}New household{% endblock %}
+{% block content %}<h1>Create a household</h1>
+<p class="muted">Households are isolated from each other. Owners of one household cannot see another.</p>
+<form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Create household</button></div></form>{% endblock %}

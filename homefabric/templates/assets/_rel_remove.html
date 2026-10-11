@@ -1,0 +1,1 @@
+{% if perm.edit and not entity.is_archived %}<form method="post" action="{% url 'assets:relationship_remove' r.pk %}" class="inline" data-confirm="Remove this relationship?">{% csrf_token %}<input type="hidden" name="next_entity" value="{{ entity.pk }}"><button type="submit" class="link-button small">Remove</button></form>{% endif %}

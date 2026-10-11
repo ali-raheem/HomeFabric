@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}No household{% endblock %}
+{% block content %}<h1>You are not in a household yet</h1>
+<p>Ask a household owner to send you an invitation link.</p>
+{% if user.is_instance_admin %}<p><a class="button" href="{% url 'accounts:household_create' %}">Create a household</a></p>{% endif %}
+{% endblock %}

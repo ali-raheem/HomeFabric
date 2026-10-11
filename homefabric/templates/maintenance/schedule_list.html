@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Schedules{% endblock %}
+{% block content %}<div class="page-head"><h1>Recurring schedules</h1></div>
+<p class="muted small">To add a schedule, open the item it belongs to and choose “Add schedule”.</p>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">Schedule</th><th scope="col">Item</th><th scope="col">Repeats</th><th scope="col">Next due</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for s, next in rows %}<tr><td data-label="Schedule"><a href="{{ s.get_absolute_url }}">{{ s.title }}</a></td><td data-label="Item"><a href="{{ s.entity.get_absolute_url }}">{{ s.entity.name }}</a></td>
+<td data-label="Repeats">{{ s.describe }}</td><td data-label="Next due">{{ next|date:"d M Y"|default:"—" }}</td>
+<td data-label="Status">{% if s.enabled %}{% status_badge "enabled" "Enabled" %}{% else %}{% status_badge "disabled" "Disabled" %}{% endif %}</td></tr>
+{% empty %}<tr><td colspan="5">No schedules yet.</td></tr>{% endfor %}</tbody></table></div>
+{% include "partials/pagination.html" %}{% endblock %}

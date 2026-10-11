@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Dashboard</h1>
+{% if perm.edit %}<div class="actions"><a class="button" href="{% url 'assets:entity_create' %}">Add item</a><a class="button secondary" href="{% url 'maintenance:task_create' %}">Add task</a></div>{% endif %}</div>
+
+{% if scheduler.stale %}<div class="alert alert-warning" role="alert"><p><strong>Scheduled processing is not running.</strong>
+{% if scheduler.last_run %}Last successful run {% localtime_hh scheduler.last_run %}.{% else %}It has never run.{% endif %}
+New recurring tasks and reminders will not appear until <code>process_schedules</code> and <code>process_notifications</code> run every minute.{% if user.is_instance_admin %} See <a href="{% url 'operations:instance_status' %}">Administration</a>.{% endif %}</p></div>{% endif %}
+{% if notify.paused %}<div class="alert alert-warning"><p><strong>Notification delivery is paused.</strong> Reminders are queued but not sent.{% if user.is_instance_admin %} <a href="{% url 'operations:instance_status' %}">Review and resume</a>.{% endif %}</p></div>{% endif %}
+{% if my_failures %}<div class="alert alert-error"><p><strong>Some of your notifications could not be delivered.</strong> <a href="{% url 'notifications:channels' %}">Check your notification channels</a>.</p></div>{% endif %}
+{% if not has_channels %}<div class="alert alert-info"><p>You have no notification channels, so you will not receive reminders. <a href="{% url 'notifications:channel_create' %}">Add email or another channel</a>.</p></div>{% endif %}
+
+<div class="stats" role="list">
+  <a role="listitem" class="stat {% if overdue_count %}attention{% endif %}" href="{% url 'maintenance:task_list' %}?status=overdue"><strong>{{ overdue_count }}</strong> overdue</a>
+  <a role="listitem" class="stat" href="{% url 'maintenance:task_list' %}?status=soon"><strong>{{ due_soon|length }}{% if due_soon|length == 10 %}+{% endif %}</strong> due in 14 days</a>
+  <a role="listitem" class="stat" href="{% url 'maintenance:task_list' %}?assignee=me"><strong>{{ mine|length }}{% if mine|length == 10 %}+{% endif %}</strong> assigned to you</a>
+  <a role="listitem" class="stat" href="{% url 'assets:entity_list' %}"><strong>{{ entity_count }}</strong> items</a>
+</div>
+
+<div class="grid">
+  <section class="card" aria-labelledby="ov-h"><div class="card-head"><h2 id="ov-h">Overdue</h2><a href="{% url 'maintenance:task_list' %}?status=overdue">All overdue</a></div>
+    <ul class="list">{% for t in overdue %}{% include "maintenance/_task_row.html" %}{% empty %}<li class="muted">Nothing overdue.</li>{% endfor %}</ul></section>
+  <section class="card" aria-labelledby="soon-h"><div class="card-head"><h2 id="soon-h">Due soon</h2><a href="{% url 'maintenance:task_list' %}?status=soon">All due soon</a></div>
+    <ul class="list">{% for t in due_soon %}{% include "maintenance/_task_row.html" %}{% empty %}<li class="muted">Nothing due in the next 14 days.</li>{% endfor %}</ul></section>
+  <section class="card" aria-labelledby="mine-h"><div class="card-head"><h2 id="mine-h">Assigned to you</h2><a href="{% url 'maintenance:task_list' %}?assignee=me">All yours</a></div>
+    <ul class="list">{% for t in mine %}{% include "maintenance/_task_row.html" %}{% empty %}<li class="muted">No open tasks assigned to you.</li>{% endfor %}</ul></section>
+  <section class="card" aria-labelledby="ren-h"><h2 id="ren-h">Renewals, expiries and warranties (60 days)</h2>
+    <ul class="list">{% for e in renewals %}<li><a href="{{ e.get_absolute_url }}">{{ e.name }}</a><span class="small">
+    {% if e.renewal_date and e.renewal_date >= today %}Renewal/review {{ e.renewal_date|date:"d M Y" }}{% elif e.end_date and e.end_date >= today %}Ends {{ e.end_date|date:"d M Y" }}{% else %}Warranty ends {{ e.warranty_end|date:"d M Y" }}{% endif %}</span></li>{% empty %}<li class="muted">Nothing coming up.</li>{% endfor %}</ul></section>
+  <section class="card" aria-labelledby="rec-h"><h2 id="rec-h">Recent work and notes</h2>
+    <ul class="list">{% for a in recent %}<li><span><a href="{% url 'maintenance:activity_detail' a.pk %}">{{ a.headline }}</a> <span class="kind">· {{ a.entity.name }}</span></span><span class="small muted">{{ a.occurred_on|date:"d M Y" }}</span></li>{% empty %}<li class="muted">No history yet.</li>{% endfor %}</ul></section>
+  <section class="card" aria-labelledby="nh-h"><h2 id="nh-h">Notification health</h2>
+    <dl class="props">
+      <dt>Scheduler</dt><dd>{% if scheduler.stale %}{% status_badge "failed" "Not running" %}{% else %}{% status_badge "sent" "Running" %}{% endif %}{% if scheduler.last_run %} <span class="small muted">last run {% localtime_hh scheduler.last_run %}</span>{% endif %}</dd>
+      <dt>Delivery</dt><dd>{% if notify.paused %}{% status_badge "review" "Paused" %}{% else %}{% status_badge "sent" "Active" %}{% endif %}</dd>
+      <dt>Queued</dt><dd>{{ notify.pending }}</dd>
+      <dt>Sent (7 days)</dt><dd>{{ notify.sent_7d }}</dd>
+      <dt>Failed</dt><dd>{% if notify.failed_unacknowledged %}{% status_badge "failed" notify.failed_unacknowledged %}{% else %}0{% endif %}</dd>
+    </dl>
+    {% if household_failures %}<h3>Recent failures</h3><ul class="list">{% for d in household_failures %}<li><span>{{ d.subject|truncatechars:60 }} <span class="small muted">to {{ d.recipient.label }} via {{ d.endpoint.display_name }}</span><br><span class="small">{{ d.last_error|truncatechars:120 }}</span></span>
+    <form method="post" action="{% url 'notifications:acknowledge' d.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="small secondary" type="submit">Dismiss</button></form></li>{% endfor %}</ul>{% endif %}
+  </section>
+</div>
+{% endblock %}

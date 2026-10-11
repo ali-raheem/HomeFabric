@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Upload document{% endblock %}
+{% block content %}<h1>Upload a document{% if entity %} for {{ entity.name }}{% endif %}</h1>
+<p class="muted small">PDF, images, plain text and Office documents up to the configured size limit. Files are private to this household and are only downloaded, never executed. Macro-enabled Office files are rejected.</p>
+<form method="post" enctype="multipart/form-data" class="stack" novalidate>{% csrf_token %}{{ form }}
+<div class="form-actions"><button type="submit">Upload</button><a href="{% if entity %}{{ entity.get_absolute_url }}{% else %}{% url 'documents:list' %}{% endif %}">Cancel</a></div></form>{% endblock %}

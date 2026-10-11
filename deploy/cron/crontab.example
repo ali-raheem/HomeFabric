@@ -1,0 +1,8 @@
+# HomeFabric scheduled jobs (crontab -e as the service user).
+# Overlap is prevented inside the commands with a database lease, so no flock is needed.
+FABRIC_CONFIG_FILE=/etc/homefabric/fabric.toml
+* * * * * /opt/homefabric/.venv/bin/homefabric process_schedules --once >> /var/log/homefabric/jobs.log 2>&1
+* * * * * /opt/homefabric/.venv/bin/homefabric process_notifications --once >> /var/log/homefabric/jobs.log 2>&1
+30 2 * * * /opt/homefabric/.venv/bin/homefabric backup --output /var/backups/homefabric/ >> /var/log/homefabric/backup.log 2>&1
+# Keep 14 days of local archives:
+45 2 * * * find /var/backups/homefabric -name 'homefabric-*.zip' -mtime +14 -delete

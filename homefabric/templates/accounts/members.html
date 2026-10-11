@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Members{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Members of {{ current_household.name }}</h1><div class="actions"><a class="button secondary" href="{% url 'accounts:household_settings' %}">Settings</a></div></div>
+<div class="alert alert-info"><p><strong>Access is household-wide.</strong> Every member, including viewers, can see all items, history and documents (including downloads) in this household. There are no per-item or per-document restrictions.</p></div>
+<section class="card" aria-labelledby="m-h"><h2 id="m-h">Members</h2>
+<div class="table-wrap"><table class="responsive">
+<thead><tr><th scope="col">Person</th><th scope="col">Role</th><th scope="col">Status</th>{% if perm.manage %}<th scope="col">Actions</th>{% endif %}</tr></thead>
+<tbody>{% for m in memberships %}
+<tr><td data-label="Person">{{ m.user.label }} <span class="muted small">({{ m.user.username }})</span></td>
+<td data-label="Role">{% if perm.manage and m.is_active %}<form method="post" action="{% url 'accounts:member_role' m.pk %}" class="filters">{% csrf_token %}<label class="sr-only" for="role-{{ m.pk }}">Role for {{ m.user.label }}</label>
+<select id="role-{{ m.pk }}" name="role">{% for value, label in role_form.fields.role.choices %}<option value="{{ value }}" {% if value == m.role %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit" class="small secondary">Change</button></form>{% else %}{{ m.get_role_display }}{% endif %}</td>
+<td data-label="Status">{% if m.is_active and m.user.is_active %}{% status_badge "active" "Active" %}{% else %}{% status_badge "archived" "No access" %}{% endif %}</td>
+{% if perm.manage %}<td data-label="Actions">{% if m.is_active %}<form method="post" action="{% url 'accounts:member_deactivate' m.pk %}" data-confirm="Remove {{ m.user.label }}'s access? Their history is kept.">{% csrf_token %}<button type="submit" class="small secondary">Remove access</button></form>{% else %}<form method="post" action="{% url 'accounts:member_reactivate' m.pk %}">{% csrf_token %}<button type="submit" class="small secondary">Restore access</button></form>{% endif %}</td>{% endif %}</tr>
+{% endfor %}</tbody></table></div>
+</section>
+{% if perm.manage %}
+<section class="card" aria-labelledby="inv-h"><h2 id="inv-h">Invite someone</h2>
+{% if new_link %}<div class="alert alert-success"><p>Invitation link (single use, expires in 7 days). Share it privately:</p>
+<label for="new-link" class="sr-only">Invitation link</label><input id="new-link" type="text" readonly value="{{ new_link }}">
+<p><button type="button" class="small secondary" data-copy="new-link">Copy link</button></p></div>{% endif %}
+<form method="post" class="stack">{% csrf_token %}{{ invite_form }}<div class="form-actions"><button type="submit">Create invitation</button></div></form>
+<h3>Recent invitations</h3>
+<ul class="list">{% for inv in invitations %}<li><span>{{ inv.email|default:"Link" }} · {{ inv.get_role_display }}</span>
+<span>{% status_badge inv.state %} <span class="muted small">created {% localtime_hh inv.created_at %}</span>
+{% if inv.state == "pending" %}<form method="post" action="{% url 'accounts:invitation_revoke' inv.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small secondary">Revoke</button></form>{% endif %}</span></li>{% empty %}<li class="muted">No invitations yet.</li>{% endfor %}</ul>
+</section>{% endif %}
+{% endblock %}

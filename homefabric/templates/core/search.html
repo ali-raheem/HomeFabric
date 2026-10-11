@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Search{% endblock %}
+{% block content %}
+<h1>Search</h1>
+<form method="get" class="filters" role="search"><div class="field"><label for="q">Search for</label><input id="q" type="search" name="q" value="{{ q }}"></div>
+<div class="field"><label for="in">In</label><select id="in" name="in"><option value="">Everything</option>
+<option value="entities" {% if section == "entities" %}selected{% endif %}>Items</option><option value="history" {% if section == "history" %}selected{% endif %}>History and notes</option><option value="documents" {% if section == "documents" %}selected{% endif %}>Documents</option><option value="tasks" {% if section == "tasks" %}selected{% endif %}>Tasks</option></select></div>
+<button type="submit">Search</button></form>
+<p class="muted small">Searches names, descriptions, tags, model and serial numbers, notes and document names. Document contents are not searched.</p>
+{% if too_short %}<p>Type at least two characters.</p>{% endif %}
+{% if q and not too_short %}
+{% with p=pages.entities %}{% if p is not None %}<section class="card" aria-labelledby="r-items"><div class="card-head"><h2 id="r-items">Items ({{ p.paginator.count }})</h2>{% if not section and p.paginator.count > 8 %}<a href="?q={{ q|urlencode }}&in=entities">All item results</a>{% endif %}</div>
+<ul class="list">{% for e in p %}<li><span><span aria-hidden="true">{{ e.entity_type.base_kind|kind_icon }}</span> <a class="primary" href="{{ e.get_absolute_url }}">{{ e.name }}</a> <span class="kind">{{ e.entity_type.name }}{% if e.model_number %} · {{ e.model_number }}{% endif %}</span></span>{% if e.is_archived %}{% status_badge "archived" %}{% endif %}</li>{% empty %}<li class="muted">No items match.</li>{% endfor %}</ul>
+{% if section == "entities" %}{% include "partials/pagination.html" with page=p %}{% endif %}</section>{% endif %}{% endwith %}
+{% with p=pages.history %}{% if p is not None %}<section class="card" aria-labelledby="r-hist"><div class="card-head"><h2 id="r-hist">History and notes ({{ p.paginator.count }})</h2>{% if not section and p.paginator.count > 8 %}<a href="?q={{ q|urlencode }}&in=history">All history results</a>{% endif %}</div>
+<ul class="list">{% for a in p %}<li><span><a class="primary" href="{% url 'maintenance:activity_detail' a.pk %}">{{ a.headline }}</a> <span class="kind">{{ a.entity.name }}</span></span><span class="small muted">{{ a.occurred_on|date:"d M Y" }}</span></li>{% empty %}<li class="muted">No history matches.</li>{% endfor %}</ul>
+{% if section == "history" %}{% include "partials/pagination.html" with page=p %}{% endif %}</section>{% endif %}{% endwith %}
+{% with p=pages.documents %}{% if p is not None %}<section class="card" aria-labelledby="r-docs"><div class="card-head"><h2 id="r-docs">Documents ({{ p.paginator.count }})</h2>{% if not section and p.paginator.count > 8 %}<a href="?q={{ q|urlencode }}&in=documents">All document results</a>{% endif %}</div>
+<ul class="list">{% for d in p %}<li><a class="primary" href="{{ d.get_absolute_url }}">{{ d.display_name }}</a><span class="kind">{{ d.get_category_display }}</span></li>{% empty %}<li class="muted">No documents match.</li>{% endfor %}</ul>
+{% if section == "documents" %}{% include "partials/pagination.html" with page=p %}{% endif %}</section>{% endif %}{% endwith %}
+{% with p=pages.tasks %}{% if p is not None %}<section class="card" aria-labelledby="r-tasks"><div class="card-head"><h2 id="r-tasks">Tasks ({{ p.paginator.count }})</h2>{% if not section and p.paginator.count > 8 %}<a href="?q={{ q|urlencode }}&in=tasks">All task results</a>{% endif %}</div>
+<ul class="list">{% for t in p %}<li><span><a class="primary" href="{{ t.get_absolute_url }}">{{ t.title }}</a> <span class="kind">{{ t.entity.name }}</span></span>{% status_badge t.status t.get_status_display %}</li>{% empty %}<li class="muted">No tasks match.</li>{% endfor %}</ul>
+{% if section == "tasks" %}{% include "partials/pagination.html" with page=p %}{% endif %}</section>{% endif %}{% endwith %}
+{% endif %}
+{% endblock %}

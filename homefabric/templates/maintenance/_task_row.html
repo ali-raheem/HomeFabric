@@ -1,0 +1,3 @@
+{% load fabric %}<li><span><a class="primary" href="{% url 'maintenance:task_detail' t.pk %}">{{ t.title }}</a>
+<span class="kind">· <a href="{% url 'assets:entity_detail' t.entity_id %}">{{ t.entity.name }}</a>{% if t.kind == "booking" %} · booking{% endif %}</span></span>
+<span>{% due_badge t today %}{% if t.status == "in_progress" %} {% status_badge "in_progress" %}{% endif %}{% if t.assignee %} <span class="small muted">· {{ t.assignee.label }}</span>{% endif %}</span></li>

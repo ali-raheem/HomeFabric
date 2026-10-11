@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Disable schedule{% endblock %}
+{% block content %}<h1>Disable {{ schedule.title }}?</h1>
+<p>No new occurrences will be generated and reminders for its tasks stop. Existing tasks and history are kept. You can re-enable it later and review any missed occurrences first.</p>
+<form method="post">{% csrf_token %}<div class="form-actions"><button type="submit">Disable schedule</button><a href="{{ schedule.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

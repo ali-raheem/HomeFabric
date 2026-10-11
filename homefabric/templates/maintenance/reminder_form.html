@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Add reminder{% endblock %}
+{% block content %}<h1>Add a reminder for {{ target.title }}</h1>
+<p class="muted">Reminders are sent at the chosen time in the household timezone ({{ current_household.timezone }}). Overdue tasks are not repeatedly notified.</p>
+<form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Add reminder</button><a href="{{ target.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

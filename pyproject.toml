@@ -1,0 +1,50 @@
+[project]
+name = "homefabric"
+version = "1.0.0"
+description = "Self-hosted home asset and maintenance manager"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "Django>=5.2.7,<5.3",
+    "waitress>=3.0.2,<4",
+    "apprise>=1.9,<2",
+    "markdown-it-py>=3.0,<5",
+    "tzdata>=2024.1",
+    "whitenoise>=6.7,<7",
+]
+
+[project.scripts]
+homefabric = "homefabric.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "ruff>=0.7",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["homefabric*"]
+
+[tool.setuptools.package-data]
+homefabric = ["templates/**/*", "static/**/*", "**/migrations/*.py"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["slow: performance/envelope tests (deselect with -m 'not slow')"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["homefabric/*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "DJ"]
+ignore = ["E501", "DJ001"]

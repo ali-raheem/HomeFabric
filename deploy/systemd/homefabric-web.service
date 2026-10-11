@@ -1,0 +1,19 @@
+[Unit]
+Description=HomeFabric web server
+After=network.target
+
+[Service]
+User=homefabric
+Group=homefabric
+WorkingDirectory=/opt/homefabric
+Environment=FABRIC_CONFIG_FILE=/etc/homefabric/fabric.toml
+ExecStart=/opt/homefabric/.venv/bin/homefabric serve
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/homefabric
+
+[Install]
+WantedBy=multi-user.target

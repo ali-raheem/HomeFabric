@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Items{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Items</h1>{% if perm.edit %}<div class="actions"><a class="button" href="{% url 'assets:entity_create' %}">Add item</a></div>{% endif %}</div>
+<form method="get" class="filters">
+  {% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}</div>{% endfor %}
+  <button type="submit">Filter</button>
+</form>
+<div class="table-wrap"><table class="responsive">
+<thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Model / reference</th><th scope="col">Tags</th><th scope="col">Status</th></tr></thead>
+<tbody>{% for e in page %}<tr>
+<td data-label="Name"><span aria-hidden="true">{{ e.entity_type.base_kind|kind_icon }}</span> <a href="{{ e.get_absolute_url }}">{{ e.name }}</a></td>
+<td data-label="Type">{{ e.entity_type.name }}</td>
+<td data-label="Model / ref">{{ e.model_number|default:e.reference_number|default:"—" }}</td>
+<td data-label="Tags">{% for t in e.tags.all %}<a class="tag" href="?tag={{ t.name|urlencode }}">{{ t.name }}</a>{% empty %}—{% endfor %}</td>
+<td data-label="Status">{% status_badge e.status e.get_status_display %}</td></tr>
+{% empty %}<tr><td colspan="5">No items found.{% if perm.edit %} <a href="{% url 'assets:entity_create' %}">Add your first item</a> — start with your property.{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

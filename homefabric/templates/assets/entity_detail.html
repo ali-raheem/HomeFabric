@@ -1,0 +1,99 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}{{ entity.name }}{% endblock %}
+{% block content %}
+{% if path %}<nav class="breadcrumbs" aria-label="Location"><ol>{% for p in path %}<li><a href="{{ p.get_absolute_url }}">{{ p.name }}</a></li>{% endfor %}<li aria-current="page">{{ entity.name }}</li></ol></nav>{% endif %}
+<div class="page-head">
+  <div><h1><span aria-hidden="true">{{ entity.kind|kind_icon }}</span> {{ entity.name }}</h1>
+  <p class="kind">{{ entity.entity_type.name }}{% for t in entity.tags.all %} <a class="tag" href="{% url 'assets:entity_list' %}?tag={{ t.name|urlencode }}">{{ t.name }}</a>{% endfor %}
+  {% if entity.is_archived %} {% status_badge "archived" "Archived — read-only" %}{% endif %}</p></div>
+  {% if perm.edit %}<div class="actions">
+  {% if entity.is_archived %}
+    <form method="post" action="{% url 'assets:entity_restore' entity.pk %}">{% csrf_token %}<input type="hidden" name="version" value="{{ entity.version }}"><button type="submit">Restore item</button></form>
+  {% else %}
+    <a class="button" href="{% url 'maintenance:activity_create' entity.pk %}">Add note or work</a>
+    <a class="button secondary" href="{% url 'maintenance:task_create' %}?entity={{ entity.pk }}">Add task</a>
+    <a class="button secondary" href="{% url 'assets:entity_edit' entity.pk %}">Edit</a>
+  {% endif %}</div>{% endif %}
+</div>
+{% if entity.is_archived %}<div class="alert alert-info"><p>Archived {% localtime_hh entity.archived_at %}{% if entity.archived_by %} by {{ entity.archived_by.label }}{% endif %}. History, documents and relationships remain visible but cannot be changed until the item is restored.</p></div>{% endif %}
+
+<div class="grid-2">
+<div class="stack">
+  <section class="card" aria-labelledby="ov-h"><h2 id="ov-h">Overview</h2>
+    {% if entity.description %}<div class="notes">{{ entity.description|markdown }}</div>{% endif %}
+    <dl class="props">
+      {% if entity.manufacturer %}<dt>Manufacturer</dt><dd>{{ entity.manufacturer }}</dd>{% endif %}
+      {% if entity.model_number %}<dt>Model</dt><dd>{{ entity.model_number }}</dd>{% endif %}
+      {% if entity.serial_number %}<dt>Serial number</dt><dd>{{ entity.serial_number }}</dd>{% endif %}
+      {% if entity.purchase_date %}<dt>Purchased</dt><dd>{{ entity.purchase_date|date:"d M Y" }}</dd>{% endif %}
+      {% if entity.installation_date %}<dt>Installed</dt><dd>{{ entity.installation_date|date:"d M Y" }}</dd>{% endif %}
+      {% if entity.warranty_end %}<dt>Warranty ends</dt><dd>{{ entity.warranty_end|date:"d M Y" }}{% if entity.warranty_end < today %} <span class="badge badge-muted">Expired</span>{% endif %}</dd>{% endif %}
+      {% if entity.cost_minor is not None %}<dt>Cost</dt><dd>{% money_display entity.cost_minor entity.cost_currency %}</dd>{% endif %}
+      {% if entity.provider %}<dt>Provider</dt><dd>{{ entity.provider }}</dd>{% endif %}
+      {% if entity.reference_number %}<dt>Reference</dt><dd>{{ entity.reference_number }}</dd>{% endif %}
+      {% if entity.start_date %}<dt>Starts</dt><dd>{{ entity.start_date|date:"d M Y" }}</dd>{% endif %}
+      {% if entity.end_date %}<dt>Expires / ends</dt><dd>{{ entity.end_date|date:"d M Y" }}</dd>{% endif %}
+      {% if entity.renewal_date %}<dt>Renewal / review</dt><dd>{{ entity.renewal_date|date:"d M Y" }}</dd>{% endif %}
+      {% for k, v in entity.attributes.items %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+      <dt>Latest work</dt><dd>{% if latest_work %}<a href="{% url 'maintenance:activity_detail' latest_work.pk %}">{{ latest_work.headline }}</a>, {{ latest_work.occurred_on|date:"d M Y" }}{% else %}None recorded{% endif %}</dd>
+    </dl>
+    <p class="small muted">Created {% localtime_hh entity.created_at %}{% if entity.created_by %} by {{ entity.created_by.label }}{% endif %} · updated {% localtime_hh entity.updated_at %}{% if entity.updated_by %} by {{ entity.updated_by.label }}{% endif %}</p>
+  </section>
+
+  <section class="card" aria-labelledby="tasks-h"><div class="card-head"><h2 id="tasks-h">Open tasks</h2>
+    {% if perm.edit and not entity.is_archived %}<a href="{% url 'maintenance:task_create' %}?entity={{ entity.pk }}">Add task</a>{% endif %}</div>
+    <ul class="list">{% for t in open_tasks %}{% include "maintenance/_task_row.html" %}{% empty %}<li class="muted">No open tasks.</li>{% endfor %}</ul>
+    <p class="small"><a href="{% url 'maintenance:task_list' %}?entity={{ entity.pk }}&status=all">All tasks for this item</a></p>
+  </section>
+
+  <section class="card" aria-labelledby="sched-h"><div class="card-head"><h2 id="sched-h">Schedules</h2>
+    {% if perm.edit and not entity.is_archived %}<a href="{% url 'maintenance:schedule_create' %}?entity={{ entity.pk }}">Add schedule</a>{% endif %}</div>
+    <ul class="list">{% for s in schedules %}<li><a href="{{ s.get_absolute_url }}">{{ s.title }}</a><span class="small">{{ s.describe }} {% if s.enabled %}{% status_badge "enabled" "Enabled" %}{% else %}{% status_badge "disabled" "Disabled" %}{% endif %}</span></li>{% empty %}<li class="muted">No recurring schedules.</li>{% endfor %}</ul>
+  </section>
+
+  <section class="card" aria-labelledby="hist-h"><div class="card-head"><h2 id="hist-h">History</h2>
+    {% if perm.edit and not entity.is_archived %}<a href="{% url 'maintenance:activity_create' entity.pk %}">Add entry</a>{% endif %}</div>
+    <ol class="timeline">{% for a in history_page %}<li>
+      <div><strong><a href="{% url 'maintenance:activity_detail' a.pk %}">{{ a.headline }}</a></strong> {% status_badge a.event_type a.get_event_type_display %}{% if a.correction_of_id %} <span class="badge badge-warn">Corrected</span>{% endif %}</div>
+      <div class="meta">{{ a.occurred_on|date:"D d M Y" }}{% if a.occurred_time %} {{ a.occurred_time|time:"H:i" }}{% endif %}{% if a.author %} · {{ a.author.label }}{% endif %}{% if a.provider %} · {{ a.provider }}{% endif %}{% if a.amount_minor is not None %} · {% money_display a.amount_minor a.currency %}{% endif %}</div>
+      {% if a.notes %}<div class="notes">{{ a.notes|markdown }}</div>{% endif %}
+      {% for link in a.document_links.all %}<div class="small">📎 <a href="{% url 'documents:download' link.revision.pk %}">{{ link.revision.document.display_name }} (revision {{ link.revision.revision_number }})</a></div>{% endfor %}
+    </li>{% empty %}<li class="muted">No history yet.</li>{% endfor %}</ol>
+    {% include "partials/pagination.html" with page=history_page param="hpage" label="history" %}
+  </section>
+</div>
+
+<div class="stack">
+  <section class="card" aria-labelledby="loc-h"><div class="card-head"><h2 id="loc-h">Location</h2>
+    {% if perm.edit and not entity.is_archived and entity.kind != "property" and entity.kind != "policy" and entity.kind != "agreement" %}<a href="{% url 'assets:entity_move' entity.pk %}">Move</a>{% endif %}</div>
+    {% if rels.located_in %}{% with r=rels.located_in.0 %}<p>In <a href="{{ r.target.get_absolute_url }}">{{ r.target.name }}</a></p>{% endwith %}
+    {% elif entity.kind == "property" %}<p class="muted">Top-level property.</p>{% else %}<p class="muted">No location set.</p>{% endif %}
+    {% if contents_page.paginator.count %}<h3>Contains</h3>
+    <ul class="list">{% for c in contents_page %}<li><span><span aria-hidden="true">{{ c.entity_type.base_kind|kind_icon }}</span> <a href="{{ c.get_absolute_url }}">{{ c.name }}</a></span><span class="kind">{{ c.entity_type.name }}</span></li>{% endfor %}</ul>
+    {% include "partials/pagination.html" with page=contents_page param="cpage" label="contents" %}{% endif %}
+    {% if perm.edit and not entity.is_archived and entity.kind != "policy" and entity.kind != "agreement" %}<p class="small"><a href="{% url 'assets:entity_create' %}?location={{ entity.pk }}">Add an item here</a></p>{% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="rel-h"><div class="card-head"><h2 id="rel-h">Relationships</h2>
+    {% if perm.edit and not entity.is_archived %}<a href="{% url 'assets:relationship_add' entity.pk %}">Add</a>{% endif %}</div>
+    {% if rels.part_of %}<h3>Part of</h3><ul class="list">{% for r in rels.part_of %}<li><a href="{{ r.target.get_absolute_url }}">{{ r.target.name }}</a>{% include "assets/_rel_remove.html" %}</li>{% endfor %}</ul>{% endif %}
+    {% if components %}<h3>Components and members</h3><ul class="list">{% for c in components %}<li><a href="{{ c.get_absolute_url }}">{{ c.name }}</a><span class="kind">{{ c.entity_type.name }}</span></li>{% endfor %}</ul>{% endif %}
+    {% if perm.edit and not entity.is_archived %}<p class="small"><a href="{% url 'assets:entity_create' %}?part_of={{ entity.pk }}">Add a new component</a></p>{% endif %}
+    {% if rels.associated %}<h3>Associated with</h3><ul class="list">{% for r, other in rels.associated %}<li><span><a href="{{ other.get_absolute_url }}">{{ other.name }}</a>{% if r.label %} <span class="small muted">— {{ r.label }}</span>{% endif %}</span>{% include "assets/_rel_remove.html" %}</li>{% endfor %}</ul>{% endif %}
+    {% if rels.covers %}<h3>Covers</h3><ul class="list">{% for r in rels.covers %}<li><a href="{{ r.target.get_absolute_url }}">{{ r.target.name }}</a>{% include "assets/_rel_remove.html" %}</li>{% endfor %}</ul>{% endif %}
+    {% if rels.covered_by %}<h3>Covered by</h3><ul class="list">{% for r in rels.covered_by %}<li><a href="{{ r.source.get_absolute_url }}">{{ r.source.name }}</a>{% include "assets/_rel_remove.html" %}</li>{% endfor %}</ul>{% endif %}
+    {% if not rels.part_of and not components and not rels.associated and not rels.covers and not rels.covered_by %}<p class="muted">No functional relationships.</p>{% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="docs-h"><div class="card-head"><h2 id="docs-h">Documents</h2>
+    {% if perm.edit and not entity.is_archived %}<span><a href="{% url 'documents:upload' %}?entity={{ entity.pk }}">Upload</a> · <a href="{% url 'documents:attach' entity.pk %}">Link existing</a></span>{% endif %}</div>
+    <ul class="list">{% for link in documents %}<li><span><a href="{{ link.document.get_absolute_url }}">{{ link.document.display_name }}</a> <span class="kind">{{ link.document.get_category_display }}</span></span>
+    <span>{% if link.document.current_revision %}<a class="small" href="{% url 'documents:download' link.document.current_revision.pk %}">Download</a>{% endif %}
+    {% if perm.edit and not entity.is_archived %}<form method="post" action="{% url 'documents:detach' link.pk %}" class="inline">{% csrf_token %}<button type="submit" class="link-button small" aria-label="Unlink {{ link.document.display_name }}">Unlink</button></form>{% endif %}</span></li>{% empty %}<li class="muted">No documents.</li>{% endfor %}</ul>
+  </section>
+
+  {% if perm.edit and not entity.is_archived %}<section class="card danger-zone" aria-labelledby="arch-h"><h2 id="arch-h">Archive</h2>
+  <p class="small">Archiving keeps all history but makes this item read-only. Related items are not archived.</p>
+  <a class="button secondary" href="{% url 'assets:entity_archive' entity.pk %}">Archive this item</a></section>{% endif %}
+</div>
+</div>
+{% endblock %}

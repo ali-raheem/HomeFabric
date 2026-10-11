@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}{{ action|capfirst }} {{ task.title }}{% endblock %}
+{% block content %}<h1>{% if action == "skip" %}Skip{% else %}Cancel{% endif %}: {{ task.title }}</h1>
+<p class="muted">{% if action == "skip" %}Skipping records a history event with your reason. It is never recorded as a completed service.{% else %}Cancelling records a history event with your reason.{% endif %}</p>
+<form method="post" class="stack" novalidate>{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+{{ form.reason.as_field_group }}
+{% if needs_next %}<fieldset class="fieldset-group"><legend>What happens next</legend>
+<p class="helptext">This schedule repeats after completion. Give the next due date, or pause the schedule.</p>
+{{ form.new_due_date.as_field_group }}{{ form.pause_schedule.as_field_group }}</fieldset>{% endif %}
+{{ form.version }}
+<div class="form-actions"><button type="submit">{% if action == "skip" %}Skip task{% else %}Cancel task{% endif %}</button><a href="{{ task.get_absolute_url }}">Back</a></div></form>{% endblock %}

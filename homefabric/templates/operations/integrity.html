@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}Integrity check{% endblock %}
+{% block content %}<h1>Integrity check</h1>
+{% if report.ok %}<div class="alert alert-success"><p>No problems found. {{ report.counts.documents }} documents, {{ report.counts.blobs }} stored files.</p></div>
+{% else %}<div class="alert alert-error"><p>{{ report.problems|length }} problem{{ report.problems|length|pluralize }} found.</p></div>
+<ul class="list">{% for p in report.problems %}<li><span><code>{{ p.kind }}</code> {{ p.detail }}</span></li>{% endfor %}</ul>
+<p class="small">Run <code>manage.py check_integrity --verify-checksums</code> for a full content check, and <code>--clean</code> to remove orphaned files.</p>{% endif %}
+<p><a href="{% url 'operations:instance_status' %}">Back to administration</a></p>{% endblock %}

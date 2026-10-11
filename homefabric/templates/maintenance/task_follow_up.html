@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Follow-up{% endblock %}
+{% block content %}<h1>Follow-up for {{ task.title }}</h1>
+<p class="muted">Completed tasks are not reopened. A follow-up task is linked to the original for traceability.</p>
+<form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Create follow-up</button><a href="{{ task.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

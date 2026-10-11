@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% block title %}Your account{% endblock %}
+{% block content %}
+<h1>Your account</h1>
+<div class="grid-2">
+  <section class="card" aria-labelledby="profile-h"><h2 id="profile-h">Profile</h2>
+    <p class="muted">Username: <strong>{{ user.username }}</strong>{% if user.is_instance_admin %} · Instance administrator{% endif %}</p>
+    <form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Save</button></div></form>
+  </section>
+  <div class="stack">
+    <section class="card" aria-labelledby="sec-h"><h2 id="sec-h">Security</h2>
+      <p><a href="{% url 'accounts:password_change' %}">Change password</a></p>
+      <form method="post" action="{% url 'accounts:sign_out_everywhere' %}" data-confirm="Sign out every other session?">{% csrf_token %}
+        <button type="submit" class="secondary">Sign out all other sessions</button></form>
+    </section>
+    <section class="card" aria-labelledby="hh-h"><h2 id="hh-h">Households</h2>
+      <ul class="list">{% for m in memberships %}<li><span>{{ m.household.name }}</span><span>{{ m.get_role_display }}{% if not m.is_active %} · <span class="badge badge-muted">No access</span>{% endif %}</span></li>{% empty %}<li>None yet.</li>{% endfor %}</ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

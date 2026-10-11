@@ -1,0 +1,241 @@
+"""Entities and relationships: A01, A02, A11 and relationship rules (spec §5)."""
+
+import threading
+
+import pytest
+from django.db import connection
+from django.urls import reverse
+
+from homefabric.assets import services
+from homefabric.assets.models import Entity, EntityRelationship, EntityStatus, RelationKind
+from homefabric.core.errors import ArchivedError, ConcurrencyError, DomainError
+from homefabric.maintenance import services as maint
+from homefabric.maintenance.models import MaintenanceSchedule, Task, TaskStatus
+from tests.conftest import login, seed_type
+
+pytestmark = pytest.mark.django_db
+
+
+def test_a01_same_radiator_under_bedroom_and_heating(home, owner, client):
+    radiator, heating, bedroom = home["radiator"], home["heating"], home["bedroom"]
+    services.add_relationship(radiator, heating, RelationKind.PART_OF, actor=owner)
+    assert list(services.contents(bedroom)) == [radiator]
+    assert list(services.components(heating)) == [radiator]
+    assert Entity.objects.filter(name="Bedroom radiator").count() == 1
+    login(client, owner)
+    by_location = client.get(reverse("assets:explorer_children", args=[bedroom.pk]),
+                             {"mode": "location"})
+    by_system = client.get(reverse("assets:explorer_children", args=[heating.pk]),
+                           {"mode": "system"})
+    url = radiator.get_absolute_url()
+    assert url in by_location.content.decode() and url in by_system.content.decode()
+
+
+def test_a01_boiler_exposes_associated_equipment_without_merging(home, owner):
+    services.add_relationship(home["boiler"], home["filter"], RelationKind.ASSOCIATED, actor=owner)
+    maint.add_activity(home["boiler"], actor=owner, event_type="service",
+                       occurred_on=__import__("datetime").date.today(), title="Boiler service")
+    rels = services.relationships_for(home["boiler"])
+    assert [other for _, other in rels["associated"]] == [home["filter"]]
+    assert home["filter"].activity.count() == 0
+    reverse_rels = services.relationships_for(home["filter"])
+    assert [other for _, other in reverse_rels["associated"]] == [home["boiler"]]
+
+
+def test_location_path_supports_ten_levels(household, make_entity):
+    parent = make_entity(household, "Estate", "property")
+    chain = [parent]
+    for i in range(11):
+        parent = make_entity(household, f"Level {i}", "room", location=parent)
+        chain.append(parent)
+    assert services.location_path(parent) == chain[:-1]
+
+
+def test_a02_containment_cycle_rejected_without_partial_write(home, owner):
+    utility, house = home["utility"], home["house"]
+    before = EntityRelationship.objects.count()
+    with pytest.raises(DomainError):
+        services.set_location(house, utility, actor=owner)  # a property is top-level
+    with pytest.raises(DomainError, match="loop"):
+        _make_cycle(home, owner)
+    assert EntityRelationship.objects.count() == before
+    assert services.location_of(utility) == house
+
+
+def _make_cycle(home, owner):
+    # Boiler is in the utility room; moving the utility room into the boiler is a cycle.
+    services.set_location(home["utility"], home["boiler"], actor=owner)
+
+
+def test_a02_part_of_cycle_rejected(home, owner):
+    services.add_relationship(home["filter"], home["boiler"], RelationKind.PART_OF, actor=owner)
+    services.add_relationship(home["boiler"], home["heating"], RelationKind.PART_OF, actor=owner)
+    with pytest.raises(DomainError, match="loop"):
+        services.add_relationship(home["heating"], home["filter"], RelationKind.PART_OF,
+                                  actor=owner)
+
+
+def test_part_of_allows_multiple_parents(home, owner, household, make_entity):
+    plumbing = make_entity(household, "Plumbing", "system")
+    services.add_relationship(home["radiator"], home["heating"], RelationKind.PART_OF, actor=owner)
+    services.add_relationship(home["radiator"], plumbing, RelationKind.PART_OF, actor=owner)
+    assert len(services.relationships_for(home["radiator"])["part_of"]) == 2
+
+
+def test_a02_cross_household_relationship_rejected(home, owner, other_household, make_entity,
+                                                   other_owner):
+    foreign = make_entity(other_household, "Their boiler", actor=other_owner)
+    before = EntityRelationship.objects.count()
+    with pytest.raises(DomainError, match="one household"):
+        services.add_relationship(home["boiler"], foreign, RelationKind.ASSOCIATED, actor=owner)
+    with pytest.raises(DomainError, match="one household"):
+        services.set_location(home["boiler"], foreign, actor=owner)
+    assert EntityRelationship.objects.count() == before
+    assert services.location_of(home["boiler"]) == home["utility"]
+
+
+def test_associated_symmetric_no_duplicates_or_self(home, owner):
+    services.add_relationship(home["boiler"], home["filter"], RelationKind.ASSOCIATED, actor=owner)
+    with pytest.raises(DomainError):
+        services.add_relationship(home["filter"], home["boiler"], RelationKind.ASSOCIATED,
+                                  actor=owner)
+    with pytest.raises(DomainError):
+        services.add_relationship(home["boiler"], home["boiler"], RelationKind.ASSOCIATED,
+                                  actor=owner)
+    assert EntityRelationship.objects.filter(kind=RelationKind.ASSOCIATED).count() == 1
+
+
+def test_covers_direction_rules(home, owner, household, make_entity):
+    policy = make_entity(household, "Insurance", "policy")
+    services.add_relationship(policy, home["house"], RelationKind.COVERS, actor=owner)
+    with pytest.raises(DomainError):
+        services.add_relationship(home["house"], policy, RelationKind.COVERS, actor=owner)
+    assert services.relationships_for(home["house"])["covered_by"][0].source == policy
+
+
+def test_one_immediate_location_enforced_by_database(home):
+    from django.db import IntegrityError, transaction
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        EntityRelationship.objects.create(household=home["boiler"].household,
+                                          source=home["boiler"], target=home["bedroom"],
+                                          kind=RelationKind.LOCATED_IN)
+
+
+def test_optimistic_concurrency_prevents_silent_overwrite(home, owner, editor):
+    boiler = home["boiler"]
+    stale = Entity.objects.get(pk=boiler.pk)
+    services.update_entity(boiler, actor=owner, expected_version=boiler.version,
+                           data={"name": "Boiler (kitchen)"})
+    with pytest.raises(ConcurrencyError):
+        services.update_entity(stale, actor=editor, expected_version=stale.version,
+                               data={"name": "Old boiler"})
+    assert Entity.objects.get(pk=boiler.pk).name == "Boiler (kitchen)"
+
+
+def test_attributes_validated(household, make_entity):
+    with pytest.raises(DomainError):
+        services.validate_attributes({"nested": {"a": 1}})
+    assert services.parse_attribute_lines("Filter: 22mm\nColour: white") == {
+        "Filter": "22mm", "Colour": "white"}
+    e = make_entity(household, "Thing", attributes={"Size": "L"})
+    assert e.attributes == {"Size": "L"}
+
+
+def test_a11_archive_requires_explicit_choice_for_outstanding_work(home, owner, today):
+    boiler = home["boiler"]
+    task = maint.create_task(boiler, actor=owner, title="Fix leak", due_date=today)
+    schedule = maint.create_schedule(boiler, actor=owner, title="Service", mode="fixed",
+                                     interval_count=1, interval_unit="year", anchor_date=today)
+    with pytest.raises(DomainError, match="Choose"):
+        services.archive_entity(boiler, actor=owner, expected_version=boiler.version,
+                                outstanding=None)
+    services.archive_entity(boiler, actor=owner, expected_version=boiler.version,
+                            outstanding="cancel", reason="Replaced")
+    boiler.refresh_from_db()
+    assert boiler.status == EntityStatus.ARCHIVED
+    assert Task.objects.get(pk=task.pk).status == TaskStatus.CANCELLED
+    assert not MaintenanceSchedule.objects.get(pk=schedule.pk).enabled
+    assert boiler.activity.filter(event_type="archived").exists()
+    assert boiler.activity.filter(event_type="task_cancelled").exists()
+    # Related entities are not archived; history stays readable; edits blocked.
+    assert Entity.objects.get(pk=home["utility"].pk).status == EntityStatus.ACTIVE
+    with pytest.raises(ArchivedError):
+        services.update_entity(boiler, actor=owner, expected_version=boiler.version,
+                               data={"name": "x"})
+    with pytest.raises(ArchivedError):
+        maint.add_activity(boiler, actor=owner, event_type="note", occurred_on=today)
+
+
+def test_a11_archive_retain_keeps_work_open(home, owner, today):
+    radiator = home["radiator"]
+    task = maint.create_task(radiator, actor=owner, title="Bleed", due_date=today)
+    services.archive_entity(radiator, actor=owner, expected_version=radiator.version,
+                            outstanding="retain")
+    assert Task.objects.get(pk=task.pk).status == TaskStatus.OPEN
+    radiator.refresh_from_db()
+    services.restore_entity(radiator, actor=owner, expected_version=radiator.version)
+    radiator.refresh_from_db()
+    assert radiator.status == EntityStatus.ACTIVE
+
+
+def test_archive_web_flow_shows_choice(home, owner, client, today):
+    maint.create_task(home["boiler"], actor=owner, title="Fix", due_date=today)
+    login(client, owner)
+    url = reverse("assets:entity_archive", args=[home["boiler"].pk])
+    page = client.get(url)
+    assert b"outstanding work" in page.content
+    r = client.post(url, {"version": home["boiler"].version})
+    assert r.status_code == 200  # choice required
+    r = client.post(url, {"version": home["boiler"].version, "outstanding": "retain"})
+    assert r.status_code == 302
+
+
+def test_entity_type_labels_without_new_tables(household, owner, make_entity):
+    et = services.create_entity_type(household, name="Boiler", base_kind="equipment", actor=owner)
+    e = services.create_entity(household, actor=owner, data={"name": "B", "entity_type": et})
+    assert e.kind == "equipment"
+    with pytest.raises(DomainError):
+        services.create_entity_type(household, name="boiler", base_kind="equipment", actor=owner)
+
+
+def test_entity_names_need_not_be_unique(household, make_entity):
+    make_entity(household, "Radiator")
+    make_entity(household, "Radiator")
+    assert Entity.objects.filter(name="Radiator").count() == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_opposite_part_of_edges_cannot_both_succeed(household, make_entity, owner):
+    if connection.vendor != "sqlite":
+        pytest.skip("sqlite-specific")
+    a = make_entity(household, "A", "system")
+    b = make_entity(household, "B", "system")
+    barrier = threading.Barrier(2)
+    results = []
+
+    def worker(src, dst):
+        from django.db import connections
+
+        barrier.wait()
+        try:
+            services.add_relationship(src, dst, RelationKind.PART_OF, actor=owner)
+            results.append("ok")
+        except DomainError:
+            results.append("rejected")
+        finally:
+            connections.close_all()
+
+    threads = [threading.Thread(target=worker, args=(a, b)),
+               threading.Thread(target=worker, args=(b, a))]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert sorted(results) == ["ok", "rejected"]
+    assert EntityRelationship.objects.filter(kind=RelationKind.PART_OF).count() == 1
+
+
+def test_seed_types_exist(db):
+    assert {seed_type(k).base_kind for k in ("property", "floor", "room", "system", "equipment",
+                                              "component", "policy", "agreement")}

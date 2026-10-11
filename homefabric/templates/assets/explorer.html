@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Explore{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Explore</h1>{% if perm.edit %}<div class="actions"><a class="button" href="{% url 'assets:entity_create' %}">Add item</a></div>{% endif %}</div>
+<nav class="tabs" aria-label="Explorer view">
+  <a href="?mode=location" {% if mode == "location" %}aria-current="page"{% endif %}>By location</a>
+  <a href="?mode=system" {% if mode == "system" %}aria-current="page"{% endif %}>By system</a>
+</nav>
+<p class="muted small">{% if mode == "location" %}Where things are. {% else %}How things work together. {% endif %}Both views show the same records — an item appears in its room and in its system without being duplicated.</p>
+<section class="card" aria-label="{% if mode == 'location' %}Locations{% else %}Systems{% endif %}">
+<ul class="tree">{% for e, count in nodes %}{% include "assets/_tree_node.html" %}{% empty %}
+<li class="muted">{% if mode == "location" %}No properties yet. {% if perm.edit %}<a href="{% url 'assets:entity_create' %}?kind=property">Add your property</a>.{% endif %}{% else %}No systems yet. Create an item of type System (e.g. "Central heating") and add components to it.{% endif %}</li>{% endfor %}</ul>
+{% include "partials/pagination.html" %}
+</section>
+{% if unplaced_page and unplaced_page.paginator.count %}
+<section class="card" aria-labelledby="unplaced-h"><h2 id="unplaced-h">Items without a location</h2>
+<ul class="list">{% for e in unplaced_page %}<li><a href="{{ e.get_absolute_url }}">{{ e.name }}</a><span class="kind">{{ e.entity_type.name }}</span></li>{% endfor %}</ul>
+{% include "partials/pagination.html" with page=unplaced_page param="upage" label="unplaced items" %}</section>{% endif %}
+{% endblock %}

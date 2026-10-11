@@ -1,0 +1,11 @@
+{% load fabric %}<li>
+  <div class="node">
+    {% if count %}<button type="button" class="expand" aria-expanded="false" aria-controls="children-{{ e.pk }}" aria-label="Show {{ count }} item{{ count|pluralize }} in {{ e.name }}"
+      hx-get="{% url 'assets:explorer_children' e.pk %}?mode={{ mode }}" hx-target="#children-{{ e.pk }}" hx-swap="innerHTML" hx-trigger="click once">+ {{ count }}</button>
+      <noscript><a href="{{ e.get_absolute_url }}">({{ count }})</a></noscript>
+    {% else %}<span class="leaf-spacer" aria-hidden="true"></span>{% endif %}
+    <span aria-hidden="true">{{ e.entity_type.base_kind|kind_icon }}</span>
+    <a href="{{ e.get_absolute_url }}">{{ e.name }}</a> <span class="kind">{{ e.entity_type.name }}</span>
+  </div>
+  <ul id="children-{{ e.pk }}" aria-live="polite"></ul>
+</li>

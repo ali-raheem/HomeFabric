@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Enable schedule{% endblock %}
+{% block content %}<h1>Enable {{ schedule.title }}</h1>
+{% if schedule.mode == "fixed" %}
+<h2>Catch-up preview</h2>
+{% if preview.missed %}<div class="warning-box"><p>{{ preview.missed|length }} occurrence{{ preview.missed|length|pluralize }} fell due while disabled and would be created as overdue:</p>
+<ul>{% for d in preview.missed|slice:":24" %}<li>{{ d|date:"D d M Y" }}</li>{% endfor %}{% if preview.missed|length > 24 %}<li>…and {{ preview.missed|length|add:"-24" }} more</li>{% endif %}</ul></div>{% else %}<p>No occurrences were missed.</p>{% endif %}
+<p>Upcoming within the horizon: {% for d in preview.upcoming %}{{ d|date:"d M Y" }}{% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.</p>
+{% else %}<p>{% if preview.needs_due_date %}This schedule repeats after completion. Choose when the next occurrence is due.{% else %}The open occurrence will resume.{% endif %}</p>{% endif %}
+<form method="post" class="stack">{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+{% if schedule.mode == "fixed" %}{% if preview.missed %}{{ form.skip_missed.as_field_group }}{% endif %}{% elif preview.needs_due_date %}{{ form.next_due_date.as_field_group }}{% endif %}
+<div class="form-actions"><button type="submit">Enable schedule</button><a href="{{ schedule.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

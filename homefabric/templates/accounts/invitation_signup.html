@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}Join {{ invitation.household.name }}{% endblock %}
+{% block content %}<h1>Join {{ invitation.household.name }}</h1>
+<p>You have been invited as <strong>{{ invitation.get_role_display }}</strong>. Create your account below.</p>
+<p class="muted">Already have an account? <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Sign in first</a>, then open this link again.</p>
+<form method="post" class="stack" novalidate>{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Create account and join</button></div></form>
+{% endblock %}

@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}New revision{% endblock %}
+{% block content %}<h1>Upload a new revision of {{ document.display_name }}</h1>
+<p class="muted">The current file stays available as an earlier revision. Service records keep the revision they were attached to.</p>
+<form method="post" enctype="multipart/form-data" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Upload revision</button><a href="{{ document.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

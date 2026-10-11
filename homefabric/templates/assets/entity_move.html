@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Move {{ entity.name }}{% endblock %}
+{% block content %}<h1>Move {{ entity.name }}</h1>
+<p class="muted">An item has one immediate location. Its functional relationships (systems, components) are unaffected.</p>
+<form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Move</button><a href="{{ entity.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

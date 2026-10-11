@@ -1,0 +1,90 @@
+name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1"   # weekly dependency audit
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest, macos-latest, ubuntu-24.04-arm]
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run python manage.py makemigrations --check --dry-run
+        env:
+          FABRIC_DATA_DIR: ${{ runner.temp }}/fabric-ci
+      - run: uv run pytest -m "not slow" -ra
+
+  envelope:
+    name: Performance envelope (spec §15)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - run: uv run pytest -m slow -s
+
+  cross-os-restore:
+    name: Backup on Linux, restore on Windows (A12)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: Create instance and backup
+        env:
+          FABRIC_DATA_DIR: ${{ runner.temp }}/src
+        run: |
+          uv run python manage.py migrate --no-input
+          echo "Cross-OS-Restore-Pass-1" | uv run python manage.py bootstrap_admin --username admin --password-stdin --household Home
+          uv run python manage.py seed_demo --owner admin
+          uv run python manage.py backup --output ${{ runner.temp }}/backup.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-backup
+          path: ${{ runner.temp }}/backup.zip
+
+  cross-os-restore-target:
+    needs: cross-os-restore
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-backup
+      - name: Restore and verify
+        env:
+          FABRIC_DATA_DIR: ${{ runner.temp }}\dst
+        run: |
+          uv run python manage.py migrate --no-input
+          uv run python manage.py restore backup.zip --dry-run
+          uv run python manage.py restore backup.zip --confirm
+          uv run python manage.py check_integrity --verify-checksums
+          uv run python manage.py notifications status
+
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv export --frozen --no-dev --format requirements-txt > requirements.txt
+      - run: uvx pip-audit -r requirements.txt

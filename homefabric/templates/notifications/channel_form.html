@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}{% if endpoint %}Edit channel{% else %}Add channel{% endif %}{% endblock %}
+{% block content %}<h1>{% if endpoint %}Edit {{ endpoint.display_name }}{% else %}Add a notification channel{% endif %}</h1>
+{% if endpoint %}<p class="muted">Current target: {{ endpoint.masked_target }}</p>{% endif %}
+<p class="small muted">Email needs SMTP configured on the server. Apprise supports many services; see the Apprise documentation for URL formats. Secrets are masked and excluded from backups.</p>
+<form method="post" class="stack" novalidate autocomplete="off">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Save{% if not endpoint %} and send test{% endif %}</button><a href="{% url 'notifications:channels' %}">Cancel</a></div></form>{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block title %}{% if creating %}New task{% else %}Edit task{% endif %}{% endblock %}
+{% block content %}<h1>{% if creating %}New task{% else %}Edit {{ task.title }}{% endif %}</h1>
+{% if source %}<p class="muted">From history entry: <a href="{% url 'maintenance:activity_detail' source.pk %}">{{ source.headline }}</a></p>{% endif %}
+{% if task.schedule %}<p class="helptext">This is one occurrence of “{{ task.schedule.title }}”. Changing its due date does not change the schedule.</p>{% endif %}
+<form method="post" class="stack" novalidate>{% csrf_token %}{{ form }}
+<div class="form-actions"><button type="submit">{% if creating %}Create task{% else %}Save{% endif %}</button><a href="{% if task %}{{ task.get_absolute_url }}{% else %}{% url 'maintenance:task_list' %}{% endif %}">Cancel</a></div></form>{% endblock %}

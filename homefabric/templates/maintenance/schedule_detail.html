@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}{{ schedule.title }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ schedule.title }}</h1><p>{{ schedule.describe }} · {% if schedule.enabled %}{% status_badge "enabled" "Enabled" %}{% else %}{% status_badge "disabled" "Disabled" %}{% endif %}</p></div>
+{% if perm.edit %}<div class="actions">{% if not schedule.entity.is_archived %}<a class="button secondary" href="{% url 'maintenance:schedule_edit' schedule.pk %}">Edit</a>{% endif %}
+<a class="button secondary" href="{% url 'maintenance:schedule_toggle' schedule.pk %}">{% if schedule.enabled %}Disable{% else %}Enable…{% endif %}</a></div>{% endif %}</div>
+<div class="grid-2"><div class="stack">
+<section class="card"><h2>Upcoming and open occurrences</h2>
+{% if overdue_count %}<div class="alert alert-warning"><p>{{ overdue_count }} occurrence{{ overdue_count|pluralize }} overdue.</p></div>{% endif %}
+<ul class="list">{% for t in upcoming %}{% include "maintenance/_task_row.html" %}{% empty %}<li class="muted">None.</li>{% endfor %}</ul>
+{% if bulk_form and perm.edit and upcoming %}<details><summary>Skip several occurrences</summary>
+<form method="post" action="{% url 'maintenance:schedule_bulk_skip' schedule.pk %}" class="stack">{% csrf_token %}{{ bulk_form }}<div class="form-actions"><button type="submit">Skip selected</button></div></form></details>{% endif %}
+</section>
+<section class="card"><h2>Past occurrences</h2>
+<ul class="list">{% for t in history_page %}<li><a href="{{ t.get_absolute_url }}">{{ t.due_date|date:"d M Y" }}</a><span>{% status_badge t.status t.get_status_display %}{% if t.completed_on %} <span class="small">done {{ t.completed_on|date:"d M Y" }}</span>{% endif %}</span></li>{% empty %}<li class="muted">None yet.</li>{% endfor %}</ul>
+{% include "partials/pagination.html" with page=history_page %}</section>
+</div><div class="stack">
+<section class="card"><h2>Details</h2><dl class="props">
+<dt>Item</dt><dd><a href="{{ schedule.entity.get_absolute_url }}">{{ schedule.entity.name }}</a></dd>
+<dt>Mode</dt><dd>{{ schedule.get_mode_display }}</dd>
+<dt>Anchor / first due</dt><dd>{{ schedule.anchor_date|date:"d M Y" }}</dd>
+{% if schedule.mode == "fixed" %}<dt>Generated ahead</dt><dd>{{ schedule.effective_horizon }} days</dd>
+<dt>Next dates</dt><dd>{% for d in preview %}{{ d|date:"d M Y" }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
+<dt>Default assignee</dt><dd>{{ schedule.default_assignee.label|default:"None" }}</dd>
+<dt>Timezone</dt><dd>{{ schedule.timezone }}</dd></dl>
+{% if schedule.description %}<div class="notes">{{ schedule.description|markdown }}</div>{% endif %}</section>
+<section class="card"><div class="card-head"><h2>Reminders</h2>{% if perm.edit %}<a href="{% url 'maintenance:reminder_add' 'schedule' schedule.pk %}">Add</a>{% endif %}</div>
+<ul class="list">{% for r in rules %}<li><span>{{ r }} <span class="small muted">· {{ r.get_recipient_mode_display }}</span></span>{% if perm.edit %}<form method="post" action="{% url 'maintenance:reminder_delete' r.pk %}" class="inline">{% csrf_token %}<button type="submit" class="link-button small">Remove</button></form>{% endif %}</li>{% empty %}<li class="muted">No reminders.</li>{% endfor %}</ul></section>
+</div></div>{% endblock %}

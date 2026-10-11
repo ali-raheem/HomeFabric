@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Add history entry{% endblock %}
+{% block content %}<h1>Add to the history of {{ entity.name }}</h1>
+<p class="muted small">Record a note, observation, or work done. Entries cannot be edited later, only corrected with a reason, so the original stays traceable.</p>
+<form method="post" enctype="multipart/form-data" class="stack" novalidate>{% csrf_token %}{{ form }}
+<div class="form-actions"><button type="submit">Add entry</button><a href="{{ entity.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

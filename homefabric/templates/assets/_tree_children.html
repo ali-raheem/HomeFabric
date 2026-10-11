@@ -1,0 +1,2 @@
+{% for e, count in nodes %}{% include "assets/_tree_node.html" %}{% empty %}<li class="muted small">Empty.</li>{% endfor %}
+{% if page.has_next %}<li><a href="{{ parent.get_absolute_url }}">{{ page.paginator.count }} items — open {{ parent.name }} to see all</a></li>{% endif %}

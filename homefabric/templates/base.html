@@ -1,0 +1,63 @@
+{% load static fabric %}<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowScriptTags": false, "allowEval": false}'>
+  <title>{% block title %}HomeFabric{% endblock %} · HomeFabric</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <script src="{% static 'vendor/htmx-2.0.4.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="{% url 'core:home' %}"><span aria-hidden="true">⌂</span> HomeFabric</a>
+    {% if user.is_authenticated %}
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav" aria-label="Main">
+      {% if current_household %}
+      <a href="{% url 'core:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+      <a href="{% url 'assets:explorer' %}" {% if request.resolver_match.url_name == 'explorer' %}aria-current="page"{% endif %}>Explore</a>
+      <a href="{% url 'assets:entity_list' %}" {% if request.resolver_match.url_name == 'entity_list' %}aria-current="page"{% endif %}>Items</a>
+      <a href="{% url 'maintenance:task_list' %}" {% if request.resolver_match.url_name == 'task_list' %}aria-current="page"{% endif %}>Tasks</a>
+      <a href="{% url 'maintenance:schedule_list' %}" {% if request.resolver_match.url_name == 'schedule_list' %}aria-current="page"{% endif %}>Schedules</a>
+      <a href="{% url 'documents:list' %}" {% if request.resolver_match.app_name == 'documents' %}aria-current="page"{% endif %}>Documents</a>
+      <a href="{% url 'accounts:household_settings' %}" {% if request.resolver_match.url_name == 'household_settings' or request.resolver_match.url_name == 'members' %}aria-current="page"{% endif %}>Household</a>
+      {% endif %}
+      {% if user.is_instance_admin %}<a href="{% url 'operations:instance_status' %}" {% if request.resolver_match.app_name == 'operations' %}aria-current="page"{% endif %}>Administration</a>{% endif %}
+      <a href="{% url 'notifications:channels' %}">Notifications</a>
+      <a href="{% url 'accounts:profile' %}">Account</a>
+      <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}<button type="submit" class="link-button">Sign out</button></form>
+    </nav>
+    {% endif %}
+  </div>
+  {% if user.is_authenticated and current_household %}
+  <div class="subheader">
+    <form method="get" action="{% url 'core:search' %}" role="search" class="search-form">
+      <label for="global-search" class="sr-only">Search</label>
+      <input id="global-search" type="search" name="q" placeholder="Search items, notes, documents, tasks" value="{{ request.GET.q|default:'' }}">
+      <button type="submit">Search</button>
+    </form>
+    {% if available_households|length > 1 %}
+    <form method="post" action="{% url 'accounts:switch_household' %}" class="household-switch">{% csrf_token %}
+      <label for="hh-switch">Household</label>
+      <select id="hh-switch" name="household" data-autosubmit>
+        {% for h in available_households %}<option value="{{ h.pk }}" {% if h.pk == current_household.pk %}selected{% endif %}>{{ h.name }}</option>{% endfor %}
+      </select>
+      <noscript><button type="submit">Switch</button></noscript>
+    </form>
+    {% else %}<span class="household-name">{{ current_household.name }}</span>{% endif %}
+    {% if current_role %}<span class="role-chip">{{ current_role|capfirst }}</span>{% endif %}
+  </div>
+  {% endif %}
+</header>
+<main id="main" tabindex="-1">
+  {% include "partials/messages.html" %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-footer"><p>HomeFabric {{ app_version }}</p></footer>
+</body>
+</html>

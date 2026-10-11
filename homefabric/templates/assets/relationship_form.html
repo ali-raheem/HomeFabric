@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}Add relationship{% endblock %}
+{% block content %}<h1>Add a relationship for {{ entity.name }}</h1>
+<ul class="small muted"><li><strong>Part of</strong>: functional membership, e.g. a radiator is part of the central heating system. An item can be part of several things.</li>
+<li><strong>Associated with</strong>: a two-way cross-reference, e.g. a boiler and its filter.</li>
+<li><strong>Covers</strong>: a policy or agreement applies to a property or asset.</li>
+<li>Location is set separately with <em>Move</em>.</li></ul>
+<form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Add relationship</button><a href="{{ entity.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

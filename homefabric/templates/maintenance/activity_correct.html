@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Correct entry{% endblock %}
+{% block content %}<h1>Correct “{{ entry.headline }}”</h1>
+<p class="muted">The original entry, its author and timestamp are preserved. Your correction becomes the current version.</p>
+<form method="post" class="stack" novalidate>{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Save correction</button><a href="{% url 'maintenance:activity_detail' entry.pk %}">Cancel</a></div></form>{% endblock %}

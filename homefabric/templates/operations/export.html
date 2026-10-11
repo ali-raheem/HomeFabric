@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Export household data{% endblock %}
+{% block content %}<h1>Export {{ current_household.name }}</h1>
+<p>Download a ZIP containing all of this household's items, relationships, history, tasks, schedules and documents as JSON, CSV summaries and the original files. Identifiers are preserved.</p>
+<p class="muted">The export excludes passwords and notification credentials. It is a readable extract, not a full backup — instance backups are made by the administrator.</p>
+<form method="post">{% csrf_token %}<button type="submit">Download export</button></form>{% endblock %}

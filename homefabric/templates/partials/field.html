@@ -1,0 +1,5 @@
+{% if field.use_fieldset %}<fieldset class="field{% if field.errors %} has-error{% endif %}"{% if field.help_text and field.auto_id %} aria-describedby="{{ field.auto_id }}_helptext"{% endif %}>{% if field.label %}<legend>{{ field.label }}{% if field.field.required %} <span class="req">(required)</span>{% endif %}</legend>{% endif %}{% else %}<div class="field{% if field.errors %} has-error{% endif %}">{% if field.label %}<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="req">(required)</span>{% endif %}</label>{% endif %}{% endif %}
+{% if field.help_text %}<div class="helptext" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
+{% if field.errors %}<div class="field-errors" id="{{ field.auto_id }}_error">{% for e in field.errors %}<p><span aria-hidden="true">⚠</span> {{ e }}</p>{% endfor %}</div>{% endif %}
+{{ field }}
+{% if field.use_fieldset %}</fieldset>{% else %}</div>{% endif %}

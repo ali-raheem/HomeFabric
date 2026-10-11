@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+/data/
+*.sqlite3
+*.sqlite3-*
+.env
+fabric.toml

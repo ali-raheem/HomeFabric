@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Join {{ invitation.household.name }}{% endblock %}
+{% block content %}<h1>Join {{ invitation.household.name }}</h1>
+<p>You have been invited as <strong>{{ invitation.get_role_display }}</strong>. You are signed in as {{ user.username }}.</p>
+<form method="post">{% csrf_token %}<button type="submit">Accept invitation</button></form>{% endblock %}

@@ -1,0 +1,7 @@
+# Caddy obtains and renews HTTPS certificates automatically.
+home.example.org {
+    request_body {
+        max_size 60MB
+    }
+    reverse_proxy 127.0.0.1:8000
+}

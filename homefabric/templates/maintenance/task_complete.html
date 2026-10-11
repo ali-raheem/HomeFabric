@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Complete {{ task.title }}{% endblock %}
+{% block content %}<h1>Complete: {{ task.title }}</h1>
+<p class="muted">Item: {{ task.entity.name }}.{% if task.kind == "booking" %} This records the booking only{% if task.related_task %}; “{{ task.related_task.title }}” stays open{% endif %}.{% elif task.schedule and task.schedule.mode == "after_completion" %} The next occurrence will be due {{ task.schedule.interval_count }} {{ task.schedule.get_interval_unit_display|lower }} after the date you enter.{% endif %}</p>
+<form method="post" enctype="multipart/form-data" class="stack" novalidate>{% csrf_token %}{{ form }}
+<div class="form-actions"><button type="submit">Complete task</button><a href="{{ task.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

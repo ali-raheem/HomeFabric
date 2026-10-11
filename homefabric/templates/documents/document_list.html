@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Documents{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Documents</h1>{% if perm.edit %}<div class="actions"><a class="button" href="{% url 'documents:upload' %}">Upload</a></div>{% endif %}</div>
+<form method="get" class="filters">{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}</div>{% endfor %}<button type="submit">Search</button></form>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">Name</th><th scope="col">Category</th><th scope="col">Latest file</th><th scope="col">Updated</th><th scope="col"><span class="sr-only">Download</span></th></tr></thead>
+<tbody>{% for d in page %}<tr>
+<td data-label="Name"><a href="{{ d.get_absolute_url }}">{{ d.display_name }}</a></td>
+<td data-label="Category">{{ d.get_category_display }}</td>
+<td data-label="Latest file">{% with r=d.current_revision %}{% if r %}{{ r.original_filename }} <span class="small muted">({{ r.size|filesize }}, revision {{ r.revision_number }})</span>{% endif %}{% endwith %}</td>
+<td data-label="Updated">{% localtime_hh d.updated_at "%d %b %Y" %}</td>
+<td data-label="">{% if d.current_revision %}<a href="{% url 'documents:download' d.current_revision.pk %}">Download<span class="sr-only"> {{ d.display_name }}</span></a>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="5">No documents found.</td></tr>{% endfor %}</tbody></table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

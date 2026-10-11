@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}{% if creating %}New schedule{% else %}Edit schedule{% endif %}{% endblock %}
+{% block content %}<h1>{% if creating %}New schedule for {{ entity.name }}{% else %}Edit {{ schedule.title }}{% endif %}</h1>
+<form method="post" class="stack" novalidate>{% csrf_token %}
+<div id="sched-fields">{{ form }}</div>
+<div id="recurrence-preview" aria-live="polite" hx-get="{% url 'maintenance:schedule_preview' %}" hx-trigger="load, change from:#sched-fields" hx-include="#sched-fields"></div>
+{% if change_preview %}<div class="warning-box" role="region" aria-labelledby="cp-h"><h2 id="cp-h">Review changes</h2>
+<p>Completed, skipped, cancelled, in-progress and overdue occurrences are preserved. These unstarted future occurrences will be replaced:</p>
+<ul>{% for t in change_preview.affected %}<li>{{ t.due_date|date:"D d M Y" }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+<p>New occurrences within the generation horizon:</p>
+<ul>{% for d in change_preview.new_dates %}<li>{{ d|date:"D d M Y" }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+<input type="hidden" name="confirm" value="1"></div>{% endif %}
+<div class="form-actions"><button type="submit">{% if creating %}Create schedule{% elif change_preview %}Confirm changes{% else %}Preview changes{% endif %}</button>
+<a href="{% if schedule %}{{ schedule.get_absolute_url }}{% else %}{{ entity.get_absolute_url }}{% endif %}">Cancel</a></div></form>{% endblock %}

@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% block title %}Link document{% endblock %}
+{% block content %}<h1>Link an existing document to {{ entity.name }}</h1><form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Link</button><a href="{{ entity.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

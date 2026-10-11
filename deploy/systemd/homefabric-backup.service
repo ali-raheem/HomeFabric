@@ -1,0 +1,13 @@
+[Unit]
+Description=HomeFabric nightly backup
+
+[Service]
+Type=oneshot
+User=homefabric
+Group=homefabric
+WorkingDirectory=/opt/homefabric
+Environment=FABRIC_CONFIG_FILE=/etc/homefabric/fabric.toml
+ExecStart=/opt/homefabric/.venv/bin/homefabric backup --output /var/backups/homefabric/
+# Optional: encrypt and ship off-host, e.g. with age:
+# ExecStartPost=/bin/sh -c 'f=$(ls -t /var/backups/homefabric/*.zip | head -1); age -r age1... -o "$f.age" "$f" && rm "$f"'
+ReadWritePaths=/var/lib/homefabric /var/backups/homefabric

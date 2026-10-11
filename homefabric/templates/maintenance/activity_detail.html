@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}{{ entry.headline }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ entry.headline }}</h1><p>{% status_badge entry.event_type entry.get_event_type_display %} on <a href="{{ entry.entity.get_absolute_url }}">{{ entry.entity.name }}</a></p></div>
+{% if perm.edit %}<div class="actions">{% if not entry.superseded %}<a class="button secondary" href="{% url 'maintenance:activity_correct' entry.pk %}">Correct…</a>{% endif %}
+{% if entry.event_type == "observation" or entry.event_type == "note" %}<a class="button secondary" href="{% url 'maintenance:task_create' %}?from_activity={{ entry.pk }}">Create task from this</a>{% endif %}</div>{% endif %}</div>
+{% if newer %}<div class="alert alert-warning"><p>This entry was corrected. <a href="{% url 'maintenance:activity_detail' newer.pk %}">View the newer version</a>.</p></div>{% endif %}
+<div class="grid-2"><div class="stack">
+<section class="card"><dl class="props">
+<dt>Date</dt><dd>{{ entry.occurred_on|date:"D d M Y" }}{% if entry.occurred_time %} {{ entry.occurred_time|time:"H:i" }}{% endif %}</dd>
+{% if entry.provider %}<dt>Provider</dt><dd>{{ entry.provider }}</dd>{% endif %}
+{% if entry.amount_minor is not None %}<dt>Cost</dt><dd>{% money_display entry.amount_minor entry.currency %}</dd>{% endif %}
+{% if entry.task %}<dt>Task</dt><dd><a href="{{ entry.task.get_absolute_url }}">{{ entry.task.title }}</a></dd>{% endif %}
+<dt>Recorded by</dt><dd>{{ entry.author.label|default:"System" }}, {% localtime_hh entry.created_at %}</dd>
+{% if entry.correction_reason %}<dt>Correction reason</dt><dd>{{ entry.correction_reason }}</dd>{% endif %}
+</dl>{% if entry.notes %}<h2>Notes</h2><div class="notes">{{ entry.notes|markdown }}</div>{% endif %}</section>
+<section class="card"><h2>Attachments</h2><ul class="list">{% for l in documents %}<li><a href="{% url 'documents:download' l.revision.pk %}">{{ l.revision.document.display_name }}</a><span class="small muted">revision {{ l.revision.revision_number }} · {{ l.revision.original_filename }}</span></li>{% empty %}<li class="muted">None.</li>{% endfor %}</ul></section>
+{% if follow_ups %}<section class="card"><h2>Tasks created from this entry</h2><ul class="list">{% for t in follow_ups %}<li><a href="{{ t.get_absolute_url }}">{{ t.title }}</a>{% status_badge t.status t.get_status_display %}</li>{% endfor %}</ul></section>{% endif %}
+</div>
+{% if chain|length > 1 %}<section class="card"><h2>Version history</h2><ol class="timeline">{% for v in chain %}<li><strong>{% if forloop.first %}Original{% else %}Correction {{ forloop.counter0 }}{% endif %}</strong>{% if v.pk == entry.pk %} (this version){% endif %}
+<div class="meta">{{ v.author.label|default:"System" }}, {% localtime_hh v.created_at %}</div>
+<div class="small">{{ v.occurred_on|date:"d M Y" }} · {{ v.headline }}{% if v.amount_minor is not None %} · {% money_display v.amount_minor v.currency %}{% endif %}</div>
+{% if v.correction_reason %}<div class="small">Reason: {{ v.correction_reason }}</div>{% endif %}
+{% if v.pk != entry.pk %}<a class="small" href="{% url 'maintenance:activity_detail' v.pk %}">View</a>{% endif %}</li>{% endfor %}</ol></section>{% endif %}
+</div>{% endblock %}

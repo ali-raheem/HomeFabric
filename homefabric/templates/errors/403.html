@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% block title %}Not allowed{% endblock %}
+{% block content %}<h1>Not allowed</h1><p>{{ message|default:"You do not have permission to do that." }}</p><p><a href="{% url 'core:home' %}">Go to the dashboard</a></p>{% endblock %}

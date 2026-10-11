@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Your notification channels</h1><div class="actions"><a class="button" href="{% url 'notifications:channel_create' %}">Add channel</a></div></div>
+{% if paused %}<div class="alert alert-warning"><p>Delivery is currently paused by the administrator. Test messages still work.</p></div>{% endif %}
+<p class="muted small">Reminders go to every enabled channel unless a reminder chooses specific channels. Messages contain the item, task, due date and a link that requires sign-in; documents are never attached.</p>
+{% if failures %}<section class="card" aria-labelledby="fail-h"><h2 id="fail-h">Delivery failures</h2>
+<ul class="list">{% for d in failures %}<li><span><strong>{{ d.subject|truncatechars:70 }}</strong><br><span class="small">via {{ d.endpoint.display_name }} after {{ d.attempts }} attempt{{ d.attempts|pluralize }}: {{ d.last_error }}</span></span>
+<form method="post" action="{% url 'notifications:acknowledge' d.pk %}">{% csrf_token %}<button type="submit" class="small secondary">Dismiss</button></form></li>{% endfor %}</ul></section>{% endif %}
+<section class="card" aria-labelledby="ch-h"><h2 id="ch-h">Channels</h2>
+<ul class="list">{% for e in endpoints %}<li><span><strong>{{ e.display_name }}</strong> <span class="kind">{{ e.provider }} · {{ e.masked_target }}</span><br>
+{% if e.needs_verification %}{% status_badge "review" "Needs credentials — edit and re-test" %}{% elif e.enabled %}{% status_badge "enabled" "Enabled" %}{% else %}{% status_badge "disabled" "Disabled" %}{% endif %}
+{% if e.last_test_at %}<span class="small muted"> · last test {% localtime_hh e.last_test_at %}: {% if e.last_test_ok %}OK{% else %}failed — {{ e.last_test_error }}{% endif %}</span>{% endif %}</span>
+<span class="actions"><form method="post" action="{% url 'notifications:channel_test' e.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small">Send test</button></form>
+<a class="button small secondary" href="{% url 'notifications:channel_edit' e.pk %}">Edit</a>
+<form method="post" action="{% url 'notifications:channel_toggle' e.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small secondary">{% if e.enabled %}Disable{% else %}Enable{% endif %}</button></form>
+<form method="post" action="{% url 'notifications:channel_delete' e.pk %}" class="inline" data-confirm="Remove this channel?">{% csrf_token %}<button type="submit" class="small secondary">Remove</button></form></span></li>
+{% empty %}<li class="muted">No channels yet. Add an email address or an Apprise URL (Telegram, Signal, ntfy, Slack, Discord and many more).</li>{% endfor %}</ul></section>
+<section class="card" aria-labelledby="del-h"><h2 id="del-h">Recent messages to you</h2>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">Message</th><th scope="col">Channel</th><th scope="col">Status</th><th scope="col">When</th></tr></thead><tbody>
+{% for d in page %}<tr><td data-label="Message">{{ d.subject|truncatechars:80 }}</td><td data-label="Channel">{{ d.endpoint.display_name }}</td>
+<td data-label="Status">{% status_badge d.state d.get_state_display %}{% if d.state == "pending" and d.attempts %} <span class="small">retry {{ d.attempts }}</span>{% endif %}</td>
+<td data-label="When">{% if d.sent_at %}{% localtime_hh d.sent_at %}{% else %}{% localtime_hh d.due_at %}{% endif %}</td></tr>
+{% empty %}<tr><td colspan="4">No messages yet.</td></tr>{% endfor %}</tbody></table></div>
+{% include "partials/pagination.html" %}</section>
+{% endblock %}

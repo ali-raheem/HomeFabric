@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block title %}{% if creating %}Add item{% else %}Edit {{ entity.name }}{% endif %}{% endblock %}
+{% block content %}
+<h1>{% if creating %}Add item{% else %}Edit {{ entity.name }}{% endif %}</h1>
+<form method="post" class="stack" novalidate>{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+<fieldset class="fieldset-group"><legend>Basics</legend>
+{{ form.name.as_field_group }}{{ form.entity_type.as_field_group }}{{ form.location.as_field_group }}{{ form.description.as_field_group }}{{ form.tags.as_field_group }}
+</fieldset>
+<fieldset class="fieldset-group"><legend>Equipment details</legend>
+<p class="helptext">For appliances, systems and components. Leave blank if not relevant.</p>
+{{ form.manufacturer.as_field_group }}{{ form.model_number.as_field_group }}{{ form.serial_number.as_field_group }}
+{{ form.purchase_date.as_field_group }}{{ form.installation_date.as_field_group }}{{ form.warranty_end.as_field_group }}
+{{ form.cost.as_field_group }}{{ form.cost_currency.as_field_group }}
+</fieldset>
+<fieldset class="fieldset-group"><legend>Policy or agreement details</legend>
+<p class="helptext">For insurance policies, mortgages and contracts. Dates are recorded for reminders only; nothing renews automatically.</p>
+{{ form.provider.as_field_group }}{{ form.reference_number.as_field_group }}{{ form.start_date.as_field_group }}{{ form.end_date.as_field_group }}{{ form.renewal_date.as_field_group }}
+</fieldset>
+{{ form.attributes.as_field_group }}
+{{ form.version }}
+<div class="form-actions"><button type="submit">{% if creating %}Create item{% else %}Save changes{% endif %}</button>
+<a href="{% if entity %}{{ entity.get_absolute_url }}{% else %}{% url 'assets:entity_list' %}{% endif %}">Cancel</a></div>
+</form>
+{% endblock %}

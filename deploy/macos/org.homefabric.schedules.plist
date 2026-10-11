@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>org.homefabric.schedules</string>
+  <key>ProgramArguments</key><array><string>/opt/homefabric/.venv/bin/homefabric</string><string>process_schedules</string><string>--once</string></array>
+  <key>EnvironmentVariables</key><dict><key>FABRIC_CONFIG_FILE</key><string>/usr/local/etc/homefabric/fabric.toml</string></dict>
+  <key>StartInterval</key><integer>60</integer>
+  <key>StandardErrorPath</key><string>/usr/local/var/log/homefabric-jobs.log</string>
+</dict></plist>

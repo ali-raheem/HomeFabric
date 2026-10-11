@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}{{ document.display_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ document.display_name }}</h1><p class="kind">{{ document.get_category_display }}</p></div>
+<div class="actions">{% if document.current_revision %}<a class="button" href="{% url 'documents:download' document.current_revision.pk %}">Download current</a>
+{% if document.current_revision.mime_type == "application/pdf" or "image/" in document.current_revision.mime_type %}<a class="button secondary" href="{% url 'documents:download' document.current_revision.pk %}?inline=1" target="_blank" rel="noopener">View<span class="sr-only"> (opens new tab)</span></a>{% endif %}{% endif %}
+{% if perm.edit %}<a class="button secondary" href="{% url 'documents:revise' document.pk %}">Upload new revision</a><a class="button secondary" href="{% url 'documents:edit' document.pk %}">Edit details</a>{% endif %}</div></div>
+<div class="grid-2"><div class="stack">
+{% if document.description %}<section class="card"><h2>Description</h2><div class="notes">{{ document.description|markdown }}</div></section>{% endif %}
+<section class="card" aria-labelledby="rev-h"><h2 id="rev-h">Revisions</h2>
+<p class="small muted">Revisions are immutable. History entries keep the exact revision they were attached to.</p>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">Revision</th><th scope="col">File</th><th scope="col">Uploaded</th><th scope="col">SHA-256</th></tr></thead><tbody>
+{% for r in revisions %}<tr><td data-label="Revision">{{ r.revision_number }}{% if r.pk == document.current_revision_id %} {% status_badge "active" "Current" %}{% endif %}</td>
+<td data-label="File"><a href="{% url 'documents:download' r.pk %}">{{ r.original_filename }}</a> <span class="small muted">{{ r.size|filesize }} · {{ r.mime_type }}</span>{% if r.note %}<br><span class="small">{{ r.note }}</span>{% endif %}</td>
+<td data-label="Uploaded">{% localtime_hh r.uploaded_at %}{% if r.uploaded_by %} by {{ r.uploaded_by.label }}{% endif %}</td>
+<td data-label="SHA-256"><code class="small" title="{{ r.sha256 }}">{{ r.sha256|truncatechars:15 }}</code></td></tr>{% endfor %}</tbody></table></div></section>
+</div><div class="stack">
+<section class="card"><h2>Linked items</h2><ul class="list">{% for l in entity_links %}<li><a href="{{ l.entity.get_absolute_url }}">{{ l.entity.name }}</a><span class="kind">{{ l.entity.entity_type.name }}</span></li>{% empty %}<li class="muted">Not linked to any item.</li>{% endfor %}</ul></section>
+<section class="card"><h2>Used as evidence</h2><ul class="list">{% for l in activity_links %}<li><a href="{% url 'maintenance:activity_detail' l.activity.pk %}">{{ l.activity.headline }}</a><span class="small">{{ l.activity.entity.name }} · rev {{ l.revision.revision_number }}</span></li>{% empty %}<li class="muted">None.</li>{% endfor %}
+{% for l in task_links %}<li><a href="{{ l.task.get_absolute_url }}">Task: {{ l.task.title }}</a></li>{% endfor %}</ul></section>
+<section class="card"><h2>Details</h2><dl class="props"><dt>Added</dt><dd>{% localtime_hh document.created_at %}{% if document.created_by %} by {{ document.created_by.label }}{% endif %}</dd></dl></section>
+</div></div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block title %}Sign in{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Sign in</h1>
+  <form method="post" class="stack" novalidate>{% csrf_token %}
+    {{ form }}
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="form-actions"><button type="submit">Sign in</button>
+      <a href="{% url 'accounts:password_reset' %}">Forgotten your password?</a></div>
+  </form>
+  <p class="muted small">There is no public registration. Ask a household owner for an invitation link.</p>
+</div>
+{% endblock %}

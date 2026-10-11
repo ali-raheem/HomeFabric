@@ -1,0 +1,28 @@
+# HomeFabric configuration file. Point FABRIC_CONFIG_FILE at this file and
+# restrict it: chmod 600 (Unix) or remove inherited permissions (Windows).
+# Environment variables named FABRIC_<KEY> override these values.
+
+data_dir = "/var/lib/homefabric"
+public_base_url = "https://home.example.org"
+allowed_hosts = ["home.example.org", "localhost", "127.0.0.1"]
+bind = "127.0.0.1:8000"
+# secret_key = "..."          # optional; generated into data_dir/secret_key if absent
+behind_https_proxy = true      # trust X-Forwarded-Proto from the reverse proxy
+trusted_proxy = "127.0.0.1"
+
+default_timezone = "Europe/London"
+default_currency = "GBP"
+language = "en-gb"
+max_upload_mb = 50
+schedule_horizon_days = 90
+notify_max_attempts = 5
+
+email_host = "smtp.example.org"
+email_port = 587
+email_host_user = "homefabric@example.org"
+# email_host_password: prefer FABRIC_EMAIL_HOST_PASSWORD_FILE=/run/secrets/smtp
+email_use_tls = true
+email_from = "HomeFabric <homefabric@example.org>"
+
+log_format = "json"   # or "text"
+log_level = "INFO"

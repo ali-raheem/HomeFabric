@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% block title %}Edit {{ document.display_name }}{% endblock %}
+{% block content %}<h1>Edit document details</h1><form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Save</button><a href="{{ document.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

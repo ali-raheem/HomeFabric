@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Users</h1><div class="actions"><a class="button secondary" href="{% url 'operations:instance_status' %}">Administration</a><a class="button secondary" href="{% url 'accounts:household_create' %}">New household</a></div></div>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">User</th><th scope="col">Households</th><th scope="col">Last sign-in</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+<tbody>{% for u in page %}<tr>
+<td data-label="User">{{ u.label }} <span class="muted small">({{ u.username }}{% if u.is_superuser %}, administrator{% endif %})</span></td>
+<td data-label="Households">{% for m in u.memberships.all %}{{ m.household.name }} ({{ m.get_role_display }}{% if not m.is_active %}, no access{% endif %}){% if not forloop.last %}; {% endif %}{% empty %}—{% endfor %}</td>
+<td data-label="Last sign-in">{% if u.last_login %}{% localtime_hh u.last_login %}{% else %}Never{% endif %}</td>
+<td data-label="Status">{% if u.is_active %}{% status_badge "active" %}{% else %}{% status_badge "archived" "Deactivated" %}{% endif %}</td>
+<td data-label="Actions"><form method="post" action="{% url 'accounts:user_toggle' u.pk %}" class="inline" {% if u.is_active %}data-confirm="Deactivate {{ u.username }} and end their sessions?"{% endif %}>{% csrf_token %}<button type="submit" class="small secondary">{% if u.is_active %}Deactivate{% else %}Reactivate{% endif %}</button></form>
+{% if u.is_active %}<form method="post" action="{% url 'accounts:user_setup_link' u.pk %}" class="inline">{% csrf_token %}<button type="submit" class="small secondary">Password link</button></form>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+{% include "partials/pagination.html" %}
+{% endblock %}

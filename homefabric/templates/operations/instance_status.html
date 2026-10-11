@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Administration{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Administration</h1><div class="actions">
+<a class="button secondary" href="{% url 'accounts:user_list' %}">Users</a>
+<a class="button secondary" href="{% url 'accounts:household_create' %}">New household</a>
+<a class="button secondary" href="{% url 'operations:integrity' %}">Run integrity check</a>
+<a class="button secondary" href="{% url 'admin:index' %}">Django admin</a></div></div>
+{% if debug %}<div class="alert alert-error"><p><strong>DEBUG mode is on.</strong> Turn it off (unset FABRIC_DEBUG) for real use.</p></div>{% endif %}
+{% if state.restored_at %}<div class="alert alert-warning"><p>Restored from <strong>{{ state.restored_from }}</strong> on {% localtime_hh state.restored_at %}.</p></div>{% endif %}
+{% if rollback_copies %}<div class="alert alert-info"><p>Pre-restore rollback copies are still in the data directory: {{ rollback_copies|join:", " }}. Delete them once you have verified the restore.</p></div>{% endif %}
+<div class="grid">
+<section class="card" aria-labelledby="sys-h"><h2 id="sys-h">Instance</h2><dl class="props">
+<dt>Version</dt><dd>{{ version }}</dd><dt>Public URL</dt><dd>{{ public_url }}</dd><dt>Data directory</dt><dd><code>{{ data_dir }}</code></dd>
+<dt>Database</dt><dd>{{ db_size|filesize }}</dd><dt>Documents</dt><dd>{{ blob_size|filesize }}</dd>
+<dt>Email (SMTP)</dt><dd>{% if email_configured %}Configured{% else %}Not configured{% endif %}</dd>
+<dt>Readiness</dt><dd>{% for k, v in readiness.checks.items %}{{ k }}: {{ v }}{% if not forloop.last %}; {% endif %}{% endfor %}</dd>
+<dt>Maintenance lock</dt><dd>{% if lock %}{% status_badge "review" "Held" %} {{ lock.reason }} since {{ lock.started_at }}{% else %}Free{% endif %}</dd></dl></section>
+<section class="card" aria-labelledby="sch-h"><h2 id="sch-h">Scheduler</h2>
+{% if scheduler.stale %}<div class="alert alert-warning"><p>Scheduled jobs have not succeeded recently. Check your cron, systemd timer or Task Scheduler entries.</p></div>{% endif %}
+<ul class="list">{% for j in scheduler.jobs %}<li><span><code>{{ j.name }}</code><br><span class="small muted">{% if j.last_success_at %}last success {% localtime_hh j.last_success_at %}{% else %}never succeeded{% endif %}{% if j.last_error %} · last error: {{ j.last_error|truncatechars:120 }}{% endif %}</span></span>{% if j.stale %}{% status_badge "failed" "Stale" %}{% else %}{% status_badge "sent" "OK" %}{% endif %}</li>{% endfor %}</ul></section>
+<section class="card" aria-labelledby="not-h"><h2 id="not-h">Notification delivery</h2>
+<dl class="props"><dt>State</dt><dd>{% if state.notifications_paused %}{% status_badge "review" "Paused" %} {{ state.paused_reason }}{% else %}{% status_badge "sent" "Active" %}{% endif %}</dd>
+<dt>Queued</dt><dd>{{ preview.pending }} ({{ preview.overdue }} more than an hour late)</dd><dt>Needing review</dt><dd>{{ preview.review }}</dd>
+<dt>Channels needing credentials</dt><dd>{{ preview.endpoints_needing_verification }}</dd><dt>Failed, not dismissed</dt><dd>{{ notify.failed_unacknowledged }}</dd></dl>
+{% if state.notifications_paused %}
+<form method="post" action="{% url 'operations:notifications_resume' %}" class="stack">{% csrf_token %}<h3>Resume delivery</h3>{{ resume_form }}<div class="form-actions"><button type="submit">Resume delivery</button></div></form>
+{% else %}<form method="post" action="{% url 'operations:notifications_pause' %}" class="stack">{% csrf_token %}<div class="field"><label for="pause-reason">Reason</label><input id="pause-reason" name="reason" type="text"></div><button type="submit" class="secondary">Pause delivery</button></form>{% endif %}
+</section>
+<section class="card" aria-labelledby="bk-h"><h2 id="bk-h">Backup and recovery</h2>
+<p>Backups are created from the command line so they can be automated. Archives contain password hashes and all household data: store them encrypted (for example with <code>age</code>, <code>gpg</code> or 7-Zip AES-256) and off the host.</p>
+<code class="copy">python manage.py backup --output /path/to/backups/</code>
+<code class="copy">python manage.py verify_backup /path/to/archive.zip</code>
+<code class="copy">python manage.py restore /path/to/archive.zip --dry-run</code>
+<p class="small">Restoring replaces the whole instance. Stop the web server and scheduler first, then run <code>restore … --confirm</code>. Notifications stay paused afterwards until you resume them here. See the operator guide for full disaster-recovery steps.</p></section>
+</div>
+<section class="card" aria-labelledby="audit-h"><h2 id="audit-h">Recent administrative events</h2>
+<ul class="list">{% for ev in audit %}<li><span><code>{{ ev.action }}</code> {{ ev.object_label|truncatechars:60 }}{% if ev.household %} <span class="small muted">({{ ev.household.name }})</span>{% endif %}</span><span class="small muted">{{ ev.actor_label }} · {% localtime_hh ev.timestamp %}</span></li>{% empty %}<li class="muted">No events.</li>{% endfor %}</ul></section>
+{% endblock %}

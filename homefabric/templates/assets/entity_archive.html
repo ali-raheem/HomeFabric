@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}Archive {{ entity.name }}{% endblock %}
+{% block content %}<h1>Archive {{ entity.name }}</h1>
+<p>Archiving keeps all history, documents and relationships, and makes the item read-only until restored. Related items are not archived.</p>
+{% if has_work %}<div class="warning-box"><p><strong>This item has outstanding work.</strong> Choose what happens to it:</p>
+<ul>{% for t in work.tasks %}<li>Task: {{ t.title }} {% due_badge t today %}</li>{% endfor %}{% for s in work.schedules %}<li>Schedule: {{ s.title }} ({{ s.describe }})</li>{% endfor %}</ul></div>{% endif %}
+<form method="post" class="stack">{% csrf_token %}{% if not has_work %}{{ form.reason.as_field_group }}{{ form.version }}{% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}{% else %}{{ form }}{% endif %}
+<div class="form-actions"><button type="submit" class="danger">Archive</button><a href="{{ entity.get_absolute_url }}">Cancel</a></div></form>{% endblock %}

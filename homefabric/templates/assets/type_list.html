@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}Item types{% endblock %}
+{% block content %}<h1>Item types</h1>
+<p class="muted">Types are labels that behave like one of the built-in kinds. Add your own, such as "Boiler" (equipment) or "Garden" (room).</p>
+<div class="grid-2"><section class="card"><h2>Available types</h2>
+<div class="table-wrap"><table class="responsive"><thead><tr><th scope="col">Name</th><th scope="col">Behaves as</th><th scope="col">Source</th></tr></thead><tbody>
+{% for t in types %}<tr><td data-label="Name">{{ t.name }}</td><td data-label="Behaves as">{{ t.get_base_kind_display }}</td><td data-label="Source">{% if t.is_seed %}Built-in{% else %}This household{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% if perm.manage %}<section class="card"><h2>Add a type</h2><form method="post" class="stack">{% csrf_token %}{{ form }}<div class="form-actions"><button type="submit">Add type</button></div></form></section>{% endif %}
+</div>{% endblock %}

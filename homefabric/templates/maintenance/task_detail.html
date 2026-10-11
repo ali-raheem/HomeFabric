@@ -1,0 +1,42 @@
+{% extends "base.html" %}{% load fabric %}{% block title %}{{ task.title }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ task.title }}</h1>
+<p>{% status_badge task.status task.get_status_display %} {% if task.is_unfinished %}{% due_badge task today %}{% endif %}{% if task.kind == "booking" %} <span class="badge badge-info">Booking</span>{% endif %}</p></div>
+{% if perm.edit and task.is_unfinished %}<div class="actions">
+  <a class="button" href="{% url 'maintenance:task_complete' task.pk %}">Complete…</a>
+  {% if task.status == "open" %}<form method="post" action="{% url 'maintenance:task_start' task.pk %}">{% csrf_token %}<input type="hidden" name="version" value="{{ task.version }}"><button type="submit" class="secondary">Mark in progress</button></form>{% endif %}
+  <a class="button secondary" href="{% url 'maintenance:task_edit' task.pk %}">Edit</a>
+  <a class="button secondary" href="{% url 'maintenance:task_skip' task.pk %}">Skip…</a>
+  <a class="button secondary" href="{% url 'maintenance:task_cancel' task.pk %}">Cancel task…</a>
+  {% if task.kind != "booking" %}<a class="button secondary" href="{% url 'maintenance:task_create' %}?related={{ task.pk }}">Add booking task</a>{% endif %}
+</div>{% elif perm.edit %}<div class="actions"><a class="button secondary" href="{% url 'maintenance:task_follow_up' task.pk %}">Create follow-up task</a></div>{% endif %}
+</div>
+<div class="grid-2"><div class="stack">
+<section class="card"><h2>Details</h2><dl class="props">
+<dt>Item</dt><dd><a href="{% url 'assets:entity_detail' task.entity_id %}">{{ task.entity.name }}</a></dd>
+{% if task.schedule %}<dt>Schedule</dt><dd><a href="{{ task.schedule.get_absolute_url }}">{{ task.schedule.title }}</a> ({{ task.schedule.describe }}){% if task.scheduled_date and task.scheduled_date != task.due_date %}<br><span class="small">Originally scheduled {{ task.scheduled_date|date:"d M Y" }}</span>{% endif %}</dd>{% endif %}
+<dt>Due</dt><dd>{{ task.due_date|date:"D d M Y"|default:"No due date" }}</dd>
+<dt>Assignee</dt><dd>{{ task.assignee.label|default:"Unassigned" }}</dd>
+{% if task.related_task %}<dt>Related task</dt><dd><a href="{{ task.related_task.get_absolute_url }}">{{ task.related_task.title }}</a> ({{ task.related_task.get_status_display|lower }})</dd>{% endif %}
+{% if task.completed_on %}<dt>Completed</dt><dd>{{ task.completed_on|date:"d M Y" }}{% if task.completed_by %} by {{ task.completed_by.label }}{% endif %}</dd>{% endif %}
+{% if task.status_reason %}<dt>Reason</dt><dd>{{ task.status_reason }}</dd>{% endif %}
+{% if task.source_activity %}<dt>Created from</dt><dd><a href="{% url 'maintenance:activity_detail' task.source_activity.pk %}">{{ task.source_activity.headline }}</a></dd>{% endif %}
+<dt>Created</dt><dd>{% localtime_hh task.created_at %}{% if task.created_by %} by {{ task.created_by.label }}{% endif %}</dd>
+</dl>
+{% if task.description %}<h3>Description</h3><div class="notes">{{ task.description|markdown }}</div>{% endif %}
+{% if task.kind == "booking" and task.related_task %}<p class="helptext">Completing this booking records only that the booking was made. “{{ task.related_task.title }}” stays open until the work itself is completed.</p>{% endif %}
+</section>
+{% if related_from %}<section class="card"><h2>Bookings and follow-ups</h2><ul class="list">{% for t in related_from %}<li><a href="{{ t.get_absolute_url }}">{{ t.title }}</a>{% status_badge t.status t.get_status_display %}</li>{% endfor %}</ul></section>{% endif %}
+<section class="card"><h2>History</h2><ol class="timeline">{% for a in activity %}<li><strong><a href="{% url 'maintenance:activity_detail' a.pk %}">{{ a.headline }}</a></strong> {% status_badge a.event_type a.get_event_type_display %}{% if a.superseded %} <span class="badge badge-muted">Superseded</span>{% endif %}
+<div class="meta">{{ a.occurred_on|date:"d M Y" }}{% if a.author %} · {{ a.author.label }}{% endif %}{% if a.provider %} · {{ a.provider }}{% endif %}{% if a.amount_minor is not None %} · {% money_display a.amount_minor a.currency %}{% endif %}</div>
+{% if a.notes %}<div class="notes">{{ a.notes|markdown }}</div>{% endif %}
+{% for link in a.document_links.all %}<div class="small">📎 <a href="{% url 'documents:download' link.revision.pk %}">{{ link.revision.document.display_name }} (revision {{ link.revision.revision_number }})</a></div>{% endfor %}</li>{% empty %}<li class="muted">No history for this task yet.</li>{% endfor %}</ol></section>
+</div><div class="stack">
+<section class="card"><div class="card-head"><h2>Reminders</h2>{% if perm.edit and task.is_unfinished %}<a href="{% url 'maintenance:reminder_add' 'task' task.pk %}">Add</a>{% endif %}</div>
+{% if not task.reminders_enabled %}<p>{% status_badge "disabled" "Reminders off" %}</p>{% endif %}
+<ul class="list">{% for r in task_rules %}<li><span>{{ r }} <span class="small muted">· {{ r.get_recipient_mode_display }}</span></span>{% if perm.edit %}<form method="post" action="{% url 'maintenance:reminder_delete' r.pk %}" class="inline">{% csrf_token %}<button type="submit" class="link-button small">Remove</button></form>{% endif %}</li>{% endfor %}
+{% for r in schedule_rules %}<li><span>{{ r }} <span class="small muted">· from schedule</span></span></li>{% endfor %}
+{% if not task_rules and not schedule_rules %}<li class="muted">No reminders.</li>{% endif %}</ul></section>
+<section class="card"><h2>Documents</h2><ul class="list">{% for l in documents %}<li><a href="{{ l.document.get_absolute_url }}">{{ l.document.display_name }}</a></li>{% empty %}<li class="muted">None.</li>{% endfor %}</ul></section>
+</div></div>
+{% endblock %}

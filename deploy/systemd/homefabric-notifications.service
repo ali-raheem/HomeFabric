@@ -1,0 +1,14 @@
+[Unit]
+Description=HomeFabric process_notifications (one pass)
+
+[Service]
+Type=oneshot
+User=homefabric
+Group=homefabric
+WorkingDirectory=/opt/homefabric
+Environment=FABRIC_CONFIG_FILE=/etc/homefabric/fabric.toml
+ExecStart=/opt/homefabric/.venv/bin/homefabric process_notifications --once
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/homefabric
