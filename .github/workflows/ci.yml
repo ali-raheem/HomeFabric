@@ -86,5 +86,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - run: uv export --frozen --no-dev --format requirements-txt > requirements.txt
+      - run: uv export --frozen --no-dev --no-emit-project --format requirements-txt > requirements.txt
       - run: uvx pip-audit -r requirements.txt

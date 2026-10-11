@@ -130,7 +130,7 @@ def test_archived_excluded_by_default(house, household, owner):
 def test_other_household_never_included(house, household, other_household, other_owner,
                                         make_entity):
     make_entity(other_household, "Their boiler", actor=other_owner)
-    html = write_html(household, _tmp("x.html")).read_text()
+    html = write_html(household, _tmp("x.html")).read_text(encoding="utf-8")
     assert "Their boiler" not in html
 
 
@@ -222,7 +222,7 @@ def test_cli(house, household, tmp_path):
     assert zipfile.ZipFile(tmp_path / "m.zip").namelist()
     call_command("house_manual", str(household.pk), "--output", str(tmp_path / "m.html"),
                  "--history", "none", stdout=io.StringIO())
-    assert "House manual" in (tmp_path / "m.html").read_text()
+    assert "House manual" in (tmp_path / "m.html").read_text(encoding="utf-8")
 
 
 def test_write_zip_function(house, household, tmp_path):

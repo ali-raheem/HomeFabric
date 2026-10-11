@@ -15,6 +15,15 @@ The version lives in `homefabric/__init__.py`.
 releases (they are migrated forward). It rejects backups made by a release with a newer
 database schema. Upgrade first, then restore.
 
+## [1.2.1] - 2026-10-11
+
+### Fixed
+
+- Restoring a backup on Windows failed with "Access is denied" while moving the document
+  store into place. The previous instance was kept intact, but the restore could not finish.
+- Downloaded house manuals (single HTML file) no longer get Windows line endings when
+  generated on Windows.
+
 ## [1.2.0] - 2026-10-11
 
 ### Added

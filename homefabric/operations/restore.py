@@ -138,10 +138,11 @@ def restore(archive, *, fail_after: str | None = None, migrate: bool = True) -> 
                                + "; ".join(result.errors))
         staged_instance.mkdir(parents=True)
         os.replace(extract / "db.sqlite3", staged_instance / "db.sqlite3")
-        (staged_instance / "blobs").mkdir()
+        # Windows cannot os.replace() onto an existing directory, even an empty one.
         if (extract / "blobs").exists():
             os.replace(extract / "blobs", staged_instance / "blobs")
-            (staged_instance / "blobs").mkdir(exist_ok=True)
+        else:
+            (staged_instance / "blobs").mkdir()
         _post_restore(staged_instance / "db.sqlite3", archive)
         if fail_after == "staging":
             raise RestoreError("Simulated failure after staging")

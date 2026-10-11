@@ -15,13 +15,13 @@ def test_version_is_semantic():
 
 
 def test_pyproject_reads_version_from_package():
-    data = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert "version" not in data["project"] and "version" in data["project"]["dynamic"]
     assert data["tool"]["setuptools"]["dynamic"]["version"]["attr"] == "homefabric.__version__"
 
 
 def test_changelog_top_entry_matches_version():
-    changelog = (ROOT / "CHANGELOG.md").read_text()
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     versions = re.findall(r"^## \[([^\]]+)\]", changelog, flags=re.M)
     assert versions and versions[0] == __version__, (
         "Bump homefabric.__version__ and add a CHANGELOG.md entry together.")

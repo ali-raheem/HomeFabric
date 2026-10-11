@@ -102,7 +102,9 @@ def test_a12_backup_during_writes_and_restore_on_new_host(populated, home, owner
         from django.db import connections
 
         c = Client()
-        login(c, owner)
+        # force_login, not login(): authenticating would rehash the password with the fast
+        # test hasher, which the "new host" (production hashers) cannot verify.
+        c.force_login(owner)
         i = 0
         while not stop.is_set() and i < 200:
             r = c.post(reverse("assets:entity_create"),

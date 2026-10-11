@@ -31,7 +31,7 @@ def build(household, **options) -> Manual:
 def write_html(household, output, **options) -> Path:
     manual = build(household, link_mode="inline", **options)
     output = Path(output)
-    output.write_text(render_html(manual), encoding="utf-8")
+    output.write_bytes(render_html(manual).encode("utf-8"))  # no CRLF translation on Windows
     return output
 
 
