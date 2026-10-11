@@ -37,9 +37,11 @@ Access is household-wide: there are no private items or documents inside a house
   give Ground floor 1 and First floor 2. The order is used in Explore, on item pages and in
   the house manual. Items without a position come after, grouped by kind and then sorted
   alphabetically.
+- **Part of.** On the item form, tick every system or piece of equipment the item belongs
+  to. For example, a boiler located in the Kitchen can be part of both Central heating and
+  Hot water. If a choice would create a loop, nothing is saved and the form explains why.
 - **Relationships** (on the item page):
-  - *Part of*: the radiator is part of the central heating. An item can be part of several
-    systems.
+  - *Part of*: can also be added here, one at a time.
   - *Associated with*: a two-way link, such as a boiler and its MagnaClean filter.
   - *Covers*: a policy or agreement applies to a property or asset.
 

@@ -1,5 +1,6 @@
 """Entities and relationships: A01, A02, A11 and relationship rules (spec §5)."""
 
+import re
 import threading
 
 import pytest
@@ -264,3 +265,87 @@ def test_sort_order_editable_via_form(household, owner, make_entity, client):
     assert r.status_code == 302
     floor.refresh_from_db()
     assert floor.sort_order == 3
+
+
+def _form(entity_type, **extra):
+    return {"entity_type": entity_type.pk, "cost_currency": "GBP", **extra}
+
+
+def test_create_item_in_location_and_two_systems(home, household, owner, client, make_entity):
+    hot_water = make_entity(household, "Hot water", "system")
+    login(client, owner)
+    page = client.get(reverse("assets:entity_create")).content.decode()
+    assert 'name="part_of"' in page and "Hot water (System)" in page
+    r = client.post(reverse("assets:entity_create"), _form(
+        seed_type("equipment"), name="Combi boiler", location=home["utility"].pk,
+        part_of=[home["heating"].pk, hot_water.pk]))
+    assert r.status_code == 302
+    boiler = Entity.objects.get(name="Combi boiler")
+    assert services.location_of(boiler) == home["utility"]
+    assert set(services.part_of_targets(boiler)) == {home["heating"], hot_water}
+
+
+def test_edit_changes_memberships(home, household, owner, client, make_entity):
+    hot_water = make_entity(household, "Hot water", "system")
+    boiler = home["boiler"]
+    services.add_relationship(boiler, home["heating"], RelationKind.PART_OF, actor=owner)
+    login(client, owner)
+    page = client.get(reverse("assets:entity_edit", args=[boiler.pk])).content.decode()
+    assert re.search(rf'name="part_of" value="{home["heating"].pk}"[^>]*checked', page)
+    r = client.post(reverse("assets:entity_edit", args=[boiler.pk]), _form(
+        boiler.entity_type, name="Boiler", location=home["utility"].pk,
+        part_of=[hot_water.pk], version=boiler.version))
+    assert r.status_code == 302
+    assert list(services.part_of_targets(boiler)) == [hot_water]
+
+
+def test_membership_loop_rolls_back_whole_edit(home, household, owner, client):
+    heating, boiler = home["heating"], home["boiler"]
+    services.add_relationship(boiler, heating, RelationKind.PART_OF, actor=owner)
+    login(client, owner)
+    r = client.post(reverse("assets:entity_edit", args=[heating.pk]), _form(
+        heating.entity_type, name="Renamed heating", part_of=[boiler.pk],
+        version=heating.version))
+    assert r.status_code == 200 and b"loop" in r.content
+    heating.refresh_from_db()
+    assert heating.name == "Central heating"  # nothing from the edit was saved
+    assert not services.part_of_targets(heating).exists()
+
+
+def test_archived_system_membership_preserved_on_edit(home, household, owner, client,
+                                                      make_entity):
+    old = make_entity(household, "Old heating", "system")
+    radiator = home["radiator"]
+    services.add_relationship(radiator, old, RelationKind.PART_OF, actor=owner)
+    services.archive_entity(old, actor=owner, expected_version=old.version, outstanding=None)
+    login(client, owner)
+    r = client.post(reverse("assets:entity_edit", args=[radiator.pk]), _form(
+        radiator.entity_type, name="Bedroom radiator", location=home["bedroom"].pk,
+        part_of=[home["heating"].pk], version=radiator.version))
+    assert r.status_code == 302
+    assert set(services.part_of_targets(radiator)) == {old, home["heating"]}
+
+
+def test_part_of_cannot_reference_other_household(home, owner, client, other_household,
+                                                  other_owner, make_entity):
+    foreign = make_entity(other_household, "Their heating", "system", actor=other_owner)
+    login(client, owner)
+    r = client.post(reverse("assets:entity_create"), _form(
+        seed_type("equipment"), name="Sneaky", part_of=[foreign.pk]))
+    assert r.status_code == 200 and not Entity.objects.filter(name="Sneaky").exists()
+
+
+def test_new_component_link_preselects_system(home, owner, client):
+    login(client, owner)
+    page = client.get(reverse("assets:entity_create"), {"part_of": home["heating"].pk})
+    html = page.content.decode()
+    assert re.search(rf'name="part_of" value="{home["heating"].pk}"[^>]*checked', html)
+
+
+def test_many_parents_use_compact_multi_select(household, owner, client, make_entity):
+    for i in range(31):
+        make_entity(household, f"System {i:02}", "system")
+    login(client, owner)
+    html = client.get(reverse("assets:entity_create")).content.decode()
+    assert re.search(r'<select name="part_of"[^>]*multiple', html)
+    assert "Hold Ctrl" in html

@@ -379,6 +379,33 @@ def set_location(entity: Entity, location: Entity | None, *, actor) -> None:
         })
 
 
+def part_of_targets(entity: Entity):
+    return Entity.objects.filter(incoming__source=entity, incoming__kind=RelationKind.PART_OF)
+
+
+def set_part_of(entity: Entity, targets, *, actor, manageable=None) -> dict:
+    """Make ``entity`` part of exactly ``targets``.
+
+    Only memberships whose target is in ``manageable`` (IDs) may be removed,
+    so links the caller could not offer, such as to archived systems, are kept.
+    All changes apply together or not at all.
+    """
+    wanted = {t.pk: t for t in targets}
+    added, removed = [], []
+    with transaction.atomic():
+        current = {r.target_id: r for r in EntityRelationship.objects.filter(
+            source=entity, kind=RelationKind.PART_OF).select_related("source", "target")}
+        for target_id, rel in current.items():
+            if target_id not in wanted and (manageable is None or target_id in manageable):
+                removed.append(rel.target.name)
+                remove_relationship(rel, actor=actor)
+        for target_id, target in wanted.items():
+            if target_id not in current:
+                add_relationship(entity, target, RelationKind.PART_OF, actor=actor)
+                added.append(target.name)
+    return {"added": added, "removed": removed}
+
+
 def contents(location: Entity, include_archived: bool = False):
     qs = Entity.objects.filter(
         outgoing__kind=RelationKind.LOCATED_IN, outgoing__target=location

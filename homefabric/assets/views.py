@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
@@ -52,26 +53,22 @@ def entity_create(request):
     if request.GET.get("kind"):
         initial["entity_type"] = services.types_for(request.household).filter(
             base_kind=request.GET["kind"], household__isnull=True).first()
+    if request.GET.get("part_of"):
+        initial["part_of"] = list(_entities(request).filter(pk=request.GET["part_of"]))
     form = EntityForm(request.POST or None, household=request.household, initial=initial)
     if request.method == "POST" and form.is_valid():
         try:
-            entity = services.create_entity(
-                request.household, actor=request.user, data=form.entity_data(),
-                tags=services.split_tags(form.cleaned_data.get("tags")),
-                location=form.cleaned_data.get("location"),
-            )
+            with transaction.atomic():
+                entity = services.create_entity(
+                    request.household, actor=request.user, data=form.entity_data(),
+                    tags=services.split_tags(form.cleaned_data.get("tags")),
+                    location=form.cleaned_data.get("location"),
+                )
+                services.set_part_of(entity, form.cleaned_data.get("part_of") or [],
+                                     actor=request.user)
         except DomainError as exc:
             form.add_error(None, str(exc))
         else:
-            parent = request.GET.get("part_of")
-            if parent:
-                target = _entities(request).filter(pk=parent).first()
-                if target:
-                    try:
-                        services.add_relationship(entity, target, RelationKind.PART_OF,
-                                                  actor=request.user)
-                    except DomainError as exc:
-                        messages.warning(request, str(exc))
             messages.success(request, f"Created '{entity.name}'.")
             return redirect(entity)
     return render(request, "assets/entity_form.html", {"form": form, "creating": True})
@@ -124,12 +121,18 @@ def entity_edit(request, pk):
                       initial=EntityForm.initial_for(entity))
     if request.method == "POST" and form.is_valid():
         try:
-            services.update_entity(
-                entity, actor=request.user, expected_version=form.cleaned_data["version"],
-                data=form.entity_data(), tags=services.split_tags(form.cleaned_data.get("tags")))
-            new_location = form.cleaned_data.get("location")
-            if new_location != services.location_of(entity):
-                services.set_location(entity, new_location, actor=request.user)
+            # One transaction: a rejected location or membership undoes the whole edit.
+            with transaction.atomic():
+                services.update_entity(
+                    entity, actor=request.user, expected_version=form.cleaned_data["version"],
+                    data=form.entity_data(),
+                    tags=services.split_tags(form.cleaned_data.get("tags")))
+                new_location = form.cleaned_data.get("location")
+                if new_location != services.location_of(entity):
+                    services.set_location(entity, new_location, actor=request.user)
+                services.set_part_of(
+                    entity, form.cleaned_data.get("part_of") or [], actor=request.user,
+                    manageable=set(form.fields["part_of"].queryset.values_list("pk", flat=True)))
         except DomainError as exc:
             form.add_error(None, str(exc))
         else:

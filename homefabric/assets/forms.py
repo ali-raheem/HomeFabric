@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Case, When
 
 from homefabric.assets import services
 from homefabric.assets.models import BaseKind, Entity, EntityStatus, EntityType, RelationKind
@@ -12,6 +13,10 @@ class EntityForm(forms.Form):
     entity_type = forms.ModelChoiceField(queryset=EntityType.objects.none(), label="Type")
     location = EntityChoiceField(queryset=Entity.objects.none(), required=False,
                                  label="Located in", help_text="Where this item physically is.")
+    part_of = forms.ModelMultipleChoiceField(
+        queryset=Entity.objects.none(), required=False, label="Part of",
+        help_text="Systems or equipment this item belongs to, e.g. Central heating and Hot "
+                  "water. Choose as many as apply.")
     description = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False,
                                   help_text="Markdown is supported.")
     tags = forms.CharField(required=False, help_text="Comma-separated, e.g. heating, annual.")
@@ -50,6 +55,23 @@ class EntityForm(forms.Form):
         if entity is not None:
             locations = locations.exclude(pk=entity.pk)
         self.fields["location"].queryset = locations
+        # Things an item can belong to: systems first, then equipment and components.
+        parents = Entity.objects.filter(
+            household=household, status=EntityStatus.ACTIVE,
+            entity_type__base_kind__in=[BaseKind.SYSTEM, BaseKind.EQUIPMENT, BaseKind.COMPONENT],
+        ).select_related("entity_type").order_by(
+            Case(When(entity_type__base_kind=BaseKind.SYSTEM, then=0), default=1), "name")
+        if entity is not None:
+            parents = parents.exclude(pk=entity.pk)
+        field = self.fields["part_of"]
+        # Set the widget before the queryset: assigning the queryset fills the widget's choices.
+        if parents.count() <= 30:
+            field.widget = forms.CheckboxSelectMultiple()
+        else:
+            field.widget = forms.SelectMultiple(attrs={"size": 8})
+            field.help_text += " Hold Ctrl (Cmd on a Mac) to select several."
+        field.label_from_instance = lambda e: f"{e.name} ({e.entity_type.name})"
+        field.queryset = parents
         if not self.is_bound:
             self.fields["cost_currency"].initial = household.currency
 
@@ -93,6 +115,7 @@ class EntityForm(forms.Form):
         initial["attributes"] = services.format_attribute_lines(entity.attributes)
         initial["version"] = entity.version
         initial["location"] = services.location_of(entity)
+        initial["part_of"] = list(services.part_of_targets(entity))
         if entity.cost_minor is not None:
             initial["cost"] = money.from_minor(entity.cost_minor, entity.cost_currency)
             initial["cost_currency"] = entity.cost_currency

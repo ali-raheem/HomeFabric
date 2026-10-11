@@ -4,7 +4,7 @@
 <form method="post" class="stack" novalidate>{% csrf_token %}
 {% if form.non_field_errors %}<div class="alert alert-error" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
 <fieldset class="fieldset-group"><legend>Basics</legend>
-{{ form.name.as_field_group }}{{ form.entity_type.as_field_group }}{{ form.location.as_field_group }}{{ form.sort_order.as_field_group }}{{ form.description.as_field_group }}{{ form.tags.as_field_group }}
+{{ form.name.as_field_group }}{{ form.entity_type.as_field_group }}{{ form.location.as_field_group }}{{ form.part_of.as_field_group }}{{ form.sort_order.as_field_group }}{{ form.description.as_field_group }}{{ form.tags.as_field_group }}
 </fieldset>
 <fieldset class="fieldset-group"><legend>Equipment details</legend>
 <p class="helptext">For appliances, systems and components. Leave blank if not relevant.</p>
